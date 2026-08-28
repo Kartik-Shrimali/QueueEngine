@@ -19,6 +19,7 @@
   "packageManager": "pnpm@11.24.0",
   "type": "module",
   "devDependencies": {
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11"
   }
 }
