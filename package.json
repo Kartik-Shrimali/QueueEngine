@@ -19,11 +19,13 @@
   "packageManager": "pnpm@11.24.0",
   "type": "module",
   "devDependencies": {
+    "@types/node": "^26.4.0",
     "@types/pg": "^8.23.1",
     "typescript": "^7.0.2",
     "vitest": "^4.1.11"
   },
   "dependencies": {
+    "dotenv": "^17.4.2",
     "pg": "^8.23.0"
   }
 }

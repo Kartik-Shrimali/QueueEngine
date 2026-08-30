@@ -1,9 +1,10 @@
 import pg from "pg"
-import {readFileSync , readdirSync } from "fs"
+import {readFileSync , readdirSync } from "fs";
+import { config } from "../packages/broker/src/config";
 
 const {Client} = pg;
 
-const connectionString = 'postgresql://user:pass123@localhost:5432/postgres';
+const connectionString = config.databaseUrl;
 
 async function main(){
     const client = new Client({connectionString});
