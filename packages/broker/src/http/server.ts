@@ -1,4 +1,5 @@
 import express from "express";
+import { requireScope } from "./middleware/auth.js";
 
 const app : express.Express = express();
 
@@ -7,5 +8,4 @@ app.get("/healthz" , (req , res) => {
         status : "ok"
     })
 })
-
 export default app
