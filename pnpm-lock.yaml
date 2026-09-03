@@ -229,6 +229,9 @@ importers:
 
   packages/broker:
     dependencies:
+      '@queueengine/shared':
+        specifier: workspace:*
+        version: link:../shared
       express:
         specifier: ^5.2.1
         version: 5.2.1
