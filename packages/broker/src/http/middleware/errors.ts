@@ -10,6 +10,7 @@ export function errorMapper(err : unknown , req : Request , res : Response , nex
             details : err.details
         })
     }else{
+        console.error(err)
         res.status(500).send({
             error : "internal_error",
             message : "Something went wrong "

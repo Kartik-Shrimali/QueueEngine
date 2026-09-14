@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { config } from "../../config.js";
+import { AppError } from "@queueengine/shared";
 
 type Scope = 'producer' | 'worker' | 'admin'
 
@@ -14,19 +15,13 @@ export function requireScope(scope: Scope) {
         const header = req.headers.authorization;
 
         if (!header || !header.startsWith('Bearer')) {
-            res.status(401).json({
-                msg: "Unauthorized"
-            })
-            return;
+            throw new AppError('unauthorized' , 'Missing or invalid Authorization header')
         }
 
         const token = header.split(" ")[1];
 
         if(!allowedKeys[scope].includes(token)){
-            res.status(403).json({
-                msg : "forbidden"
-            })
-            return;
+            throw new AppError('forbidden' , 'Key is valid but does not have the required scope')
         }
 
         next();
