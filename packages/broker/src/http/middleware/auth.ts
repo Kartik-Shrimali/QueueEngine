@@ -2,7 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import { config } from "../../config.js";
 import { AppError } from "@queueengine/shared";
 
-type Scope = 'producer' | 'worker' | 'admin'
+export type Scope = 'producer' | 'worker' | 'admin'
 
 const allowedKeys : Record<Scope , string[]> = {
     producer : [config.producerApiKey , config.adminApiKey],
@@ -23,6 +23,8 @@ export function requireScope(scope: Scope) {
         if(!allowedKeys[scope].includes(token)){
             throw new AppError('forbidden' , 'Key is valid but does not have the required scope')
         }
+
+        req.callerScope = token === config.adminApiKey ? 'admin' : scope
 
         next();
 
