@@ -17,3 +17,8 @@ export async function getJobById(id: string) {
     const result = await pool.query(`SELECT * from jobs WHERE id = $1`, [id]);
     return result.rows[0];
 }
+
+export async function updateJobStatus(id : string , status : 'completed' | 'dead' , deadReason?: 'exhausted' | 'abandoned'){
+    const result = await pool.query(`UPDATE jobs SET status = $1, dead_reason = $2 WHERE id = $3 RETURNING id, status`,[status , deadReason ?? null, id]);
+    return result.rows[0];
+}
