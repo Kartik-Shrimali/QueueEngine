@@ -1,1 +1,1 @@
-export {};
+export {createWorker , register , executeJob} from "./worker.js";
