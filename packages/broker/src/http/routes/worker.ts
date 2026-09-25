@@ -2,11 +2,18 @@ import express from "express";
 import { requireScope } from "../middleware/auth.js";
 import { dequeue } from "../../core/dequeue.js";
 import { reportResult } from "../../core/report.js";
-import { AppError } from "@queueengine/shared";
+import { AppError, LONG_POLL_TIMEOUT_MS } from "@queueengine/shared";
+import { parkWaiter } from "../../core/waiters.js";
 const workerRouter: express.Router = express.Router();
 
 workerRouter.post('/jobs/dequeue', requireScope('worker'), async (req, res) => {
-    const job = await dequeue();
+    let job = await dequeue();
+
+    if(!job){
+        const gotSomething = await parkWaiter(LONG_POLL_TIMEOUT_MS);
+        if(gotSomething) job = await dequeue();
+    }
+
     if (!job) {
         res.status(204).send();
         return;
@@ -25,5 +32,7 @@ workerRouter.post("/jobs/:id/result", requireScope('worker'), async (req, res) =
     const updatedJob = await reportResult(jobId, outcome);
     res.status(200).json(updatedJob);
 })
+
+
 
 export { workerRouter }
