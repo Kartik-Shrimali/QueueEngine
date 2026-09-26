@@ -5,16 +5,17 @@ import { getJobById } from "../store/pg/jobs.js";
 import { insertAttempt } from "../store/pg/attempts.js";
 import { randomUUID } from "crypto";
 
-export async function dequeue(){
-    const response = await redisClient.ZPOPMIN(qeReady())
-    if(!response){
-        return null;
+export async function dequeue(count : number = 1){
+    const jobs = [];
+
+    for(let i = 0; i < count; i++){
+        const response = await redisClient.ZPOPMIN(qeReady())
+        if(!response){
+            break;
+        }
+        const job = await getJobById(response.value);
+        await insertAttempt(job.id , 1 , 'worker-1' , randomUUID());
+        jobs.push(job);
     }
-    const value = response?.value;
-    const score = response?.score;
-
-    const job = await getJobById(value);
-
-    await insertAttempt(job.id , 1 , 'worker-1' , randomUUID());
-    return job;    
+    return jobs;    
 }

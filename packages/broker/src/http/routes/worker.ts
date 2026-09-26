@@ -7,19 +7,20 @@ import { parkWaiter } from "../../core/waiters.js";
 const workerRouter: express.Router = express.Router();
 
 workerRouter.post('/jobs/dequeue', requireScope('worker'), async (req, res) => {
-    let job = await dequeue();
+    const count = Math.min(Math.max(req.body.count ?? 1 , 1) , 50);
+    let jobs = await dequeue(count);
 
-    if(!job){
+    if(jobs.length === 0){
         const gotSomething = await parkWaiter(LONG_POLL_TIMEOUT_MS);
-        if(gotSomething) job = await dequeue();
+        if(gotSomething) jobs = await dequeue(count);
     }
 
-    if (!job) {
+    if (jobs.length === 0) {
         res.status(204).send();
         return;
     }
 
-    res.status(200).send({ jobs: [job] });
+    res.status(200).send({ jobs });
 })
 
 workerRouter.post("/jobs/:id/result", requireScope('worker'), async (req, res) => {
