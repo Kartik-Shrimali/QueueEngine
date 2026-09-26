@@ -11,13 +11,14 @@ export function createTransport(brokerUrl: string, apikey: string) {
         }
     })
 
-    return async function request(method: string, path: string, body?: unknown) {
+    return async function request(method: string, path: string, body?: unknown , signal?: AbortSignal) {
         for (let attempt = 1; attempt <= MAX_TRANSPORT_RETRIES; attempt++) {
             try {
                 const response = await client.request({
                     method,
                     url: path,
                     data: body,
+                    signal
                 })
 
                 return response.data;

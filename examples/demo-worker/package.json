@@ -12,5 +12,8 @@
   "type": "module",
   "dependencies": {
     "@queueengine/worker": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node" : "^26.4.0"
   }
 }

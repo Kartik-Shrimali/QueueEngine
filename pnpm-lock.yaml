@@ -235,6 +235,10 @@ importers:
       '@queueengine/worker':
         specifier: workspace:*
         version: link:../../packages/worker
+    devDependencies:
+      '@types/node':
+        specifier: ^26.4.0
+        version: 26.4.0
 
   packages/broker:
     dependencies:

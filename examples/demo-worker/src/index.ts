@@ -11,4 +11,15 @@ const worker = createWorker({
     apiKey : "dev_worker_key_change_me"
 });
 
-await worker.start();
+worker.start();
+
+process.on('SIGTERM' , shuttingDown)
+process.on('SIGINT' , shuttingDown)
+
+async function shuttingDown() {
+    console.log(`Shutting down..............`);
+    console.time('shutdown');
+    await worker.stop();
+    console.timeEnd('shutdown');
+    process.exit(0);
+}
