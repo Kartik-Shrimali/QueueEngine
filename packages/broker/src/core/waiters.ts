@@ -36,3 +36,10 @@ export function wakeOne() : boolean{
     waiter.resolve();
     return true;
 }
+
+export function wakeAllForShutdown(){
+    while(waiters.length > 0){
+        const waiter = waiters.shift();
+        waiter?.resolve();
+    }
+}
