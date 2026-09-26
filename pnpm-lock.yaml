@@ -258,6 +258,9 @@ importers:
 
   packages/worker:
     dependencies:
+      '@queueengine/shared':
+        specifier: workspace:*
+        version: link:../shared
       axios:
         specifier: ^1.20.0
         version: 1.20.0(debug@4.4.3)

@@ -2,7 +2,7 @@ import {createWorker , register} from "@queueengine/worker";
 
 register("send_email" , async (payload) => {
     console.log('Sending email: ', payload);
-    await new Promise((resolve) =>  setTimeout(resolve , 200));
+    await new Promise((resolve) =>  setTimeout(resolve , 3000));
     console.log('Email sent');
 });
 
