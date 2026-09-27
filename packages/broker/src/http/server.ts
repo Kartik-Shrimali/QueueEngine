@@ -4,6 +4,7 @@ import { errorMapper } from "./middleware/errors.js";
 import { AppError } from "@queueengine/shared";
 import { jobRouter } from "./routes/jobs.js";
 import { workerRouter } from "./routes/worker.js";
+import { adminRouter } from "./routes/admin.js";
 
 const app : express.Express = express();
 app.use(express.json({limit : '300kb'}));
@@ -16,6 +17,7 @@ app.get("/healthz" , (req , res) => {
 
 app.use(jobRouter);
 app.use(workerRouter);
+app.use(adminRouter);
 app.use(errorMapper);
 
 export default app
