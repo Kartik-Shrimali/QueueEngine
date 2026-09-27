@@ -2,8 +2,10 @@ import app from "./http/server.js";
 import { config } from "./config.js";
 import { redisClient } from "./store/redis/client.js";
 import { wakeAllForShutdown } from "./core/waiters.js";
+import { loadAllScripts } from "./store/redis/scripts/loader.js";
 
 await redisClient.connect();
+await loadAllScripts();
 
 const listenObject = app.listen(config.port , () => {
     console.log(`Broker listening on port ${config.port}`)
