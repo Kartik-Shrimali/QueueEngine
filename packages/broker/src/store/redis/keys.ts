@@ -21,3 +21,7 @@ export function qeLease(jobId : string) : string{
 export function qeWorker(workerId : string) : string{
     return `qe:worker:${workerId}`;
 }
+
+export function qeType(jobId : string) : string{
+    return `qe:type:${jobId}`
+}

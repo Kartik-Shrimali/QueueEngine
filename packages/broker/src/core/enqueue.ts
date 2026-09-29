@@ -2,7 +2,7 @@ import type { Priority } from "@queueengine/shared";
 import { computeScore } from "@queueengine/shared";
 import { insertJob } from "../store/pg/jobs.js";
 import { redisClient } from "../store/redis/client.js";
-import { qeDelayed, qeReady } from "../store/redis/keys.js";
+import { qeDelayed, qeReady, qeType } from "../store/redis/keys.js";
 import { wakeOne } from "./waiters.js";
 
 
@@ -22,6 +22,6 @@ export async function enqueueJob(params: {
     } else {
         await redisClient.ZADD(qeDelayed(), { score: params.runAfter.getTime(), value: job.id })
     }
-
+    await redisClient.SET(qeType(job.id) , params.type)
     return { id: job.id, status: job.status, enqueuedAt: job.enqueued_at };
 }
