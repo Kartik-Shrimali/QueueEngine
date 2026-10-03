@@ -19,6 +19,12 @@ export async function getJobById(id: string) {
 }
 
 export async function updateJobStatus(id : string , status : 'completed' | 'dead' , deadReason?: 'exhausted' | 'abandoned'){
-    const result = await pool.query(`UPDATE jobs SET status = $1, dead_reason = $2 WHERE id = $3 RETURNING id, status`,[status , deadReason ?? null, id]);
+    const result = await pool.query(`UPDATE jobs SET status = $1, dead_reason = $2, lease_token = NULL, lease_expires_at = NULL, worker_id = NULL WHERE id = $3 RETURNING id, status`,[status , deadReason ?? null, id]);
+    return result.rows[0];
+}
+
+export async function markJobActive(jobId : string , workerId : string , leaseToken : string , leaseExpiresAt : Date){
+    const result = await pool.query(`UPDATE jobs SET status = $1 , attempts = attempts+1 , lease_token = $2 , lease_expires_at = $3 , worker_id = $4 , first_started_at = COALESCE(first_started_at , now()) WHERE id = $5 RETURNING *`,['active' , leaseToken , leaseExpiresAt , workerId , jobId])
+
     return result.rows[0];
 }

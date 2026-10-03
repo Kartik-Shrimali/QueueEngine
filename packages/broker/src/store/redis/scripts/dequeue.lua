@@ -38,7 +38,7 @@ for i = 1, count do
         local token = ARGV[5 + allowedTypesCount + 1 + i]
         redis.call('SET', leasePrefix .. jobId, token, 'PX', ttl)
         redis.call('ZADD', KEYS[2], expiryScore, jobId)
-        table.insert(results, popped)
+        table.insert(results, {jobId , popped[2] , token})
     else
         redis.call('ZADD', KEYS[1], popped[2], jobId)
     end
