@@ -2,7 +2,7 @@ import { executeJob } from "./executor.js";
 
 export type ActiveController = { current: AbortController | null }
 
-export async function startPolling(request: (method: string, path: string, body?: unknown, signal?: AbortSignal) => Promise<any>, concurrency: number, stopping: { value: boolean }, activeController: ActiveController) {
+export async function startPolling(request: (method: string, path: string, body?: unknown, signal?: AbortSignal) => Promise<any>, concurrency: number, stopping: { value: boolean }, activeController: ActiveController, heldLeases: Map<string, string>, workerId: string, lostJobs: Set<string>) {
     let inFlight = 0;
     while (1) {
 
@@ -20,7 +20,7 @@ export async function startPolling(request: (method: string, path: string, body?
         const controller = new AbortController();
         activeController.current = controller
         try {
-            const response = await request("POST", "/jobs/dequeue", { workerId: 'worker-1', count: concurrency - inFlight }, controller.signal);
+            const response = await request("POST", "/jobs/dequeue", { workerId: workerId, count: concurrency - inFlight }, controller.signal);
             if (!response || !response.jobs || response.jobs.length === 0) {
                 continue;
 
@@ -28,13 +28,27 @@ export async function startPolling(request: (method: string, path: string, body?
 
             for (let job of response.jobs) {
                 inFlight++;
+                heldLeases.set(job.id, job.leaseToken)
                 executeJob(job).then(async (result) => {
                     inFlight--;
-                    await request("POST", `/jobs/${job.id}/result`, {
-                        leaseToken: job.leaseToken,
-                        outcome: result.outcome,
-                        error: result.error
-                    })
+                    heldLeases.delete(job.id)
+                    if (lostJobs.has(job.id)) {
+                        lostJobs.delete(job.id);
+                        console.warn('Lease lost, skipping report for job', job.id)
+                        return
+                    }
+                    try {
+                        await request("POST", `/jobs/${job.id}/result`, {
+                            leaseToken: job.leaseToken,
+                            outcome: result.outcome,
+                            error: result.error
+                        })
+                    } catch (error: any) {
+                        if (error.response?.status === 409) console.warn("The lease was lost for job: ", job.id);
+                        else {
+                            console.error("Report failed for job:", job.id, error.message);
+                        }
+                    }
                 })
             }
 

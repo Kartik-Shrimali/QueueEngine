@@ -6,6 +6,12 @@ register("send_email" , async (payload) => {
     console.log('Email sent');
 });
 
+register('slow_test' , async(payload) => {
+    console.log('Starting slow test' , payload);
+    await new Promise((resolve) => setTimeout(resolve , 45000));
+    console.log('Slow test finished');
+})
+
 const worker = createWorker({
     brokerUrl : 'http://localhost:3000',
     apiKey : "dev_worker_key_change_me"
