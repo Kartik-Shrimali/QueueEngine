@@ -3,6 +3,7 @@ local leasePrefix = ARGV[2]
 local currentTime = tonumber(ARGV[3])
 local typePrefix = ARGV[4]
 local allowedTypesCount = tonumber(ARGV[5])
+local candidateLimit = 20
 
 local allowedTypes = {}
 for k = 1, allowedTypesCount do
@@ -13,15 +14,12 @@ local count = tonumber(ARGV[5 + allowedTypesCount + 1])
 local expiryScore = currentTime + ttl
 local results = {}
 
-for i = 1, count do
-    local popped = redis.call('ZPOPMIN', KEYS[1], 1)
-    if #popped == 0 then
-        break
-    end
+local candidates = redis.call('ZPOPMIN' , KEYS[1] , candidateLimit)
 
-    local jobId = popped[1]
+for i = 1 , #candidates, 2 do
+    local jobId = candidates[i]
+    local score = candidates[i + 1]
     local jobType = redis.call('GET', typePrefix .. jobId)
-
     local matched = false
     if allowedTypesCount == 0 then
         matched = true
@@ -34,14 +32,15 @@ for i = 1, count do
         end
     end
 
-    if matched then
-        local token = ARGV[5 + allowedTypesCount + 1 + i]
+    if matched  and #results < count then
+        local token = ARGV[5 + allowedTypesCount + 1 + #results + 1]
         redis.call('SET', leasePrefix .. jobId, token, 'PX', ttl)
         redis.call('ZADD', KEYS[2], expiryScore, jobId)
-        table.insert(results, {jobId , popped[2] , token})
+        table.insert(results, {jobId , score , token})
     else
-        redis.call('ZADD', KEYS[1], popped[2], jobId)
+        redis.call('ZADD', KEYS[1], score , jobId)
     end
+
 end
 
 return results
