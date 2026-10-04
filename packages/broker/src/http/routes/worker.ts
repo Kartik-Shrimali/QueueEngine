@@ -4,6 +4,7 @@ import { dequeue } from "../../core/dequeue.js";
 import { reportResult } from "../../core/report.js";
 import { AppError, LONG_POLL_TIMEOUT_MS } from "@queueengine/shared";
 import { parkWaiter } from "../../core/waiters.js";
+import { heartbeat } from "../../core/heartbeat.js";
 const workerRouter: express.Router = express.Router();
 
 workerRouter.post('/jobs/dequeue', requireScope('worker'), async (req, res) => {
@@ -44,6 +45,20 @@ workerRouter.post("/jobs/:id/result", requireScope('worker'), async (req, res) =
     res.status(200).json(updatedJob);
 })
 
+workerRouter.post('/jobs/heartbeat' , requireScope('worker') , async (req , res) => {
+    const {workerId , leases} = req.body;
 
+    if(!workerId || typeof workerId !== 'string') throw new AppError('validation_failed' , "workerId should be present");
+
+    if(!Array.isArray(leases)) throw new AppError('validation_failed' , "Leases should be present");
+
+    for(const lease of leases){
+        if(lease === null || !lease.jobId || !lease.leaseToken || typeof lease.jobId !== 'string' || typeof lease.leaseToken !== 'string') throw new AppError('validation_failed' , "Incorrect values in leases");
+    }
+
+    const result = await heartbeat(workerId , leases);
+
+    res.status(200).json(result);
+})
 
 export { workerRouter }
