@@ -1,10 +1,9 @@
-import { AppError, LEASE_TTL_MS } from "@queueengine/shared";
-import { redisClient } from "../store/redis/client.js";
+import { LEASE_TTL_MS } from "@queueengine/shared";
 import { qeActive, qeLease, qeReady, qeType } from "../store/redis/keys.js";
 import {  markJobActive } from "../store/pg/jobs.js";
 import { insertAttempt } from "../store/pg/attempts.js";
 import { randomUUID } from "crypto";
-import { getScriptSha } from "../store/redis/scripts/loader.js";
+import { runScript } from "../store/redis/scripts/loader.js";
 
 export async function dequeue(workerId : string , count : number = 1 , types ?: string[]){
     const jobs = [];
@@ -14,7 +13,7 @@ export async function dequeue(workerId : string , count : number = 1 , types ?: 
     const AllTokens = Array.from({length : count} , () => randomUUID());
     const args : string[] = [String(LEASE_TTL_MS) , leasePrefix , String(currentTime) , typePrefix , String((types ?? []).length) , ...(types ?? []) , String(count) , ...AllTokens  ]
 
-    const popped = await redisClient.evalSha(getScriptSha('dequeue') , {keys : [qeReady() , qeActive()] , arguments : args} )
+    const popped = await runScript('dequeue' , [qeReady() , qeActive()] , args);
 
     const rows = popped as [string , string , string][];
 

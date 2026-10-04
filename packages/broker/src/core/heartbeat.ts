@@ -1,7 +1,7 @@
 import { HEARTBEAT_INTERVAL_MS, LEASE_TTL_MS } from "@queueengine/shared";
 import { qeActive, qeLease, qeWorker } from "../store/redis/keys.js";
 import { redisClient } from "../store/redis/client.js";
-import { getScriptSha } from "../store/redis/scripts/loader.js";
+import { runScript } from "../store/redis/scripts/loader.js";
 
 export async function heartbeat(workerId : string , leases : {jobId : string , leaseToken : string}[]){
     const currentTime = Date.now();
@@ -11,7 +11,7 @@ export async function heartbeat(workerId : string , leases : {jobId : string , l
     const leaseExpiresAt = new Date(currentTime + LEASE_TTL_MS).toISOString();
 
     for(const lease of leases){
-        const result = await redisClient.evalSha(getScriptSha('renew') , {keys : [qeActive()] , arguments : [leasePrefix , lease.jobId , lease.leaseToken , String(LEASE_TTL_MS) , String(currentTime)]})
+        const result = await runScript('renew' , [qeActive()] , [leasePrefix , lease.jobId , lease.leaseToken , String(LEASE_TTL_MS) , String(currentTime)])
 
         if(result === 1) renewed.push(lease.jobId);
         else lost.push(lease.jobId);

@@ -30,3 +30,18 @@ export function getScriptSha(name: string) {
 
     return script;
 }
+
+export async function runScript(name: string, keys: string[], args: string[]) {
+    try {
+        const result = await redisClient.evalSha(getScriptSha(name), { keys, arguments: args })
+        return result;
+    } catch (error: any) {
+        if (error.message.includes('NOSCRIPT')) {
+            await loadAllScripts();
+            const result = await redisClient.evalSha(getScriptSha(name), { keys, arguments: args })
+            return result;
+        }else{
+            throw error;
+        }
+    }
+}
