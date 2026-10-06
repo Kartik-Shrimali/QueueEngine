@@ -34,3 +34,9 @@ export async function markJobPending(jobId : string){
 
     return result.rows[0];
 }
+
+export async function markJobAbandoned(jobId : string){
+    const result = await pool.query(`UPDATE jobs SET status = 'dead' , dead_reason = 'abandoned' , finished_at = now() , lease_token = NULL , lease_expires_at = NULL , worker_id = NULL WHERE id = $1 AND status = 'active' RETURNING id , status , dead_reason` , [jobId ]);
+
+    return result.rows[0]
+}
