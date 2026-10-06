@@ -13,3 +13,9 @@ export async function finalizeAttempt(jobId : string , leaseToken : string ,outc
 
     return result.rows[0];
 }
+
+export async function markAttemptAbandoned(jobId : string){
+    const result = await pool.query(`UPDATE job_attempts SET outcome = 'abandoned' , ended_at = now() WHERE job_id = $1 AND outcome IS NULL RETURNING id` , [jobId])
+
+    return result.rows[0];
+}
