@@ -28,3 +28,9 @@ export async function markJobActive(jobId : string , workerId : string , leaseTo
 
     return result.rows[0];
 }
+
+export async function markJobPending(jobId : string){
+    const result = await pool.query(`UPDATE jobs SET status = 'pending' , run_after = now() , lease_token = NULL , lease_expires_at = NULL , worker_id = NULL WHERE id = $1 AND status = 'active' RETURNING id , status`, [jobId]);
+
+    return result.rows[0];
+}

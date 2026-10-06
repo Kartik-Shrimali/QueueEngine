@@ -1,20 +1,13 @@
 import { enqueueJob } from "./core/enqueue.js";
+import { decideReclaim, findExpiredJobs } from "./core/reclaim.js";
+import { markJobActive, markJobPending } from "./store/pg/jobs.js";
 import { redisClient } from "./store/redis/client.js";
+import { qeActive } from "./store/redis/keys.js";
 
 async function main() {
-  await redisClient.connect();
-
-  const id = await enqueueJob({
-    type: "test_job",
-    payload: { hello: "world" },
-    priority: "critical",
-    maxAttempts: 5,
-    runAfter: new Date(), // now — should go to qe:ready
-  });
-
-  console.log("Enqueued job id:", id);
-
-  process.exit(0);
+  const result = await markJobPending("d1cb81af-1cb5-4284-a999-3368eb4145e7");
+  console.log(result)
+  process.exit(0)
 }
 
 main();
