@@ -12,6 +12,11 @@ register('slow_test' , async(payload) => {
     console.log('Slow test finished');
 })
 
+register('poison' , async(payload) => {
+    console.log(`Poison job is about to kill this worker`);
+    process.exit(1);
+})
+
 const worker = createWorker({
     brokerUrl : 'http://localhost:3000',
     apiKey : "dev_worker_key_change_me"
