@@ -40,3 +40,9 @@ export async function markJobAbandoned(jobId : string){
 
     return result.rows[0]
 }
+
+export async function markJobRetry(jobId : string , runAfter : Date){
+    const result = await pool.query(`UPDATE jobs SET status = 'pending' , run_after = $1 , lease_token = NULL , lease_expires_at = NULL , worker_id = NULL WHERE id = $2 AND status = 'active' RETURNING id , status , attempts , run_after` , [runAfter , jobId]);
+
+    return result.rows[0];
+}
