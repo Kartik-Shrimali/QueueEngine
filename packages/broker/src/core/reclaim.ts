@@ -19,7 +19,12 @@ export function decideReclaim(job: { attempts: number, max_attempts: number, pri
 
 export async function reclaimJob(jobId: string) {
     const job = await getJobById(jobId);
-    if (!job) return;
+    if (!job) {
+        await redisClient.zRem(qeActive() , jobId)
+        await redisClient.del(qeLease(jobId));
+        console.warn(`Ghost id found : ${jobId}`)
+        return
+    }
 
     const reclaimDecision = decideReclaim(job)
 
