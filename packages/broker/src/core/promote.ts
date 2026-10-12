@@ -3,6 +3,7 @@ import { getJobById } from "../store/pg/jobs.js";
 import { redisClient } from "../store/redis/client.js";
 import { qeDelayed, qeReady } from "../store/redis/keys.js";
 import { runScript } from "../store/redis/scripts/loader.js";
+import { wakeOne } from "./waiters.js";
 
 export async function findDueJobs(){
     const jobs = await redisClient.zRangeByScore(qeDelayed() , 0 , Date.now());
@@ -21,6 +22,10 @@ export async function promoteJob(jobId : string){
     const score = computeScore(job.enqueued_at.getTime() , job.priority)
 
     const result = await runScript('promote' , [qeDelayed() , qeReady()] , [jobId , String(Date.now()) , String(score)])
+
+    if(result === 1){
+        wakeOne();
+    }
 
     return result;
 }
