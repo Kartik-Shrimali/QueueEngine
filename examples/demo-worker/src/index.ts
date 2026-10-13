@@ -17,6 +17,13 @@ register('poison' , async(payload) => {
     process.exit(1);
 })
 
+register('flaky_api' , async(payload) =>{
+    console.log('flaky_api job');
+    const num = Math.random();
+
+    if(num < 0.4) throw new Error('There was some error');
+})
+
 const worker = createWorker({
     brokerUrl : 'http://localhost:3000',
     apiKey : "dev_worker_key_change_me"
