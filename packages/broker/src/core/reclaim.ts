@@ -4,6 +4,7 @@ import { qeActive, qeLease, qeReady } from "../store/redis/keys.js";
 import { getJobById, markJobAbandoned, markJobPending } from "../store/pg/jobs.js";
 import { runScript } from "../store/redis/scripts/loader.js";
 import { markAttemptAbandoned } from "../store/pg/attempts.js";
+import { wakeOne } from "./waiters.js";
 
 export async function findExpiredJobs() {
     const jobs = await redisClient.zRangeByScore(qeActive(), 0, Date.now());
@@ -20,7 +21,7 @@ export function decideReclaim(job: { attempts: number, max_attempts: number, pri
 export async function reclaimJob(jobId: string) {
     const job = await getJobById(jobId);
     if (!job) {
-        await redisClient.zRem(qeActive() , jobId)
+        await redisClient.zRem(qeActive(), jobId)
         await redisClient.del(qeLease(jobId));
         console.warn(`Ghost id found : ${jobId}`)
         return
@@ -38,16 +39,18 @@ export async function reclaimJob(jobId: string) {
     else { await markJobAbandoned(jobId) }
 
     await markAttemptAbandoned(jobId)
+
+    if (reclaimDecision.action === 'requeue') wakeOne();
 }
 
-export async function reclaimExpired(){
+export async function reclaimExpired() {
     const jobIds = await findExpiredJobs();
 
-    for(const jobId of jobIds){
-        try{
+    for (const jobId of jobIds) {
+        try {
             await reclaimJob(jobId);
-        }catch(error : any){
-            console.error(`Some error in reclaiming a job with id : `, jobId , error.message);
+        } catch (error: any) {
+            console.error(`Some error in reclaiming a job with id : `, jobId, error.message);
         }
     }
     return jobIds.length;

@@ -5,7 +5,7 @@ import { qeActive, qeDelayed, qeLease } from "../store/redis/keys.js";
 import { runScript } from "../store/redis/scripts/loader.js";
 import { redisClient } from "../store/redis/client.js";
 
-export async function reportResult(jobId: string,  leaseToken : string , outcome: 'succeeded' | 'failed') {
+export async function reportResult(jobId: string,  leaseToken : string , outcome: 'succeeded' | 'failed' , errorMessage? : string) {
     const released = await runScript('release' , [qeActive()] , [qeLease('') , jobId , leaseToken])
 
     if(released === 0){
@@ -26,11 +26,11 @@ export async function reportResult(jobId: string,  leaseToken : string , outcome
 
             const response = await markJobRetry(jobId , runAfter)
             await redisClient.zAdd(qeDelayed() , {score : runAfter.getTime() ,value :  jobId});
-            await finalizeAttempt(jobId , leaseToken , 'failed')
+            await finalizeAttempt(jobId , leaseToken , 'failed' , errorMessage)
             return response;
         }            
         const response = await updateJobStatus(jobId, 'dead', 'exhausted');
-        await finalizeAttempt(jobId , leaseToken , 'failed');
+        await finalizeAttempt(jobId , leaseToken , 'failed' , errorMessage);
         return response;
     } 
 }

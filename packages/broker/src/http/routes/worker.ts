@@ -35,13 +35,14 @@ workerRouter.post("/jobs/:id/result", requireScope('worker'), async (req, res) =
     const validOutcomes = ['succeeded', 'failed'];
     const jobId = req.params.id as string;
     const outcome = req.body.outcome;
+    const error = req.body.error;
     const leaseToken = req.body.leaseToken;
 
     if(!leaseToken || typeof leaseToken !== 'string') throw new AppError('validation_failed' , "Lease token should be present and should be string")
 
     if (!validOutcomes.includes(outcome)) throw new AppError('validation_failed', 'Outcome should be succeeded or failed');
 
-    const updatedJob = await reportResult(jobId,leaseToken, outcome);
+    const updatedJob = await reportResult(jobId,leaseToken, outcome , error?.message);
     res.status(200).json(updatedJob);
 })
 

@@ -10,6 +10,12 @@ const allowedKeys : Record<Scope , string[]> = {
     admin : [config.adminApiKey]
 }
 
+const configKeys : Record<Scope , string> = {
+    producer : config.producerApiKey,
+    worker : config.workerApiKey,
+    admin : config.adminApiKey
+}
+
 export function requireScope(scope: Scope) {
     return (req: Request, res: Response, next: NextFunction) => {
         const header = req.headers.authorization;
@@ -19,6 +25,8 @@ export function requireScope(scope: Scope) {
         }
 
         const token = header.split(" ")[1];
+        
+        if(!Object.values(configKeys).includes(token)) throw new AppError('unauthorized' , "Key is not valid")
 
         if(!allowedKeys[scope].includes(token)){
             throw new AppError('forbidden' , 'Key is valid but does not have the required scope')

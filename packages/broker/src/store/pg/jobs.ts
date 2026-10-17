@@ -19,7 +19,7 @@ export async function getJobById(id: string) {
 }
 
 export async function updateJobStatus(id : string , status : 'completed' | 'dead' , deadReason?: 'exhausted' | 'abandoned'){
-    const result = await pool.query(`UPDATE jobs SET status = $1, dead_reason = $2, lease_token = NULL, lease_expires_at = NULL, worker_id = NULL WHERE id = $3 RETURNING id, status`,[status , deadReason ?? null, id]);
+    const result = await pool.query(`UPDATE jobs SET status = $1, dead_reason = $2, lease_token = NULL, lease_expires_at = NULL, worker_id = NULL, finished_at = now() WHERE id = $3 RETURNING id, status , finished_at`,[status , deadReason ?? null, id]);
     return result.rows[0];
 }
 
