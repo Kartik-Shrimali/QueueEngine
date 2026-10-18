@@ -19,3 +19,5 @@ export const PRIORITY_BOOST_MS = {
     normal : 0,
     low : -900000
 } as const;
+export const BROKER_LOCK_TTL_MS = 15000;
+export const BROKER_LOCK_RENEW_MS = 5000;
