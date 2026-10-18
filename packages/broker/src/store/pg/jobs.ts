@@ -52,3 +52,9 @@ export async function getLiveJobs(){
 
     return result.rows;
 }
+
+export async function getStalePendingJobs(){
+    const result = await pool.query(`SELECT id , type , priority , enqueued_at , run_after from jobs WHERE status = 'pending' and run_after < now() - interval '30 seconds'`);
+
+    return result.rows;
+}
