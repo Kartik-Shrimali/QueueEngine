@@ -1,6 +1,7 @@
 import { BROKER_LOCK_TTL_MS } from "@queueengine/shared";
 import { redisClient } from "./store/redis/client.js";
 import { qeBrokerLock } from "./store/redis/keys.js";
+import { runScript } from "./store/redis/scripts/loader.js";
 
 export async function acquireBrokerLock(){
     const instanceId = crypto.randomUUID();
@@ -14,4 +15,10 @@ export async function acquireBrokerLock(){
     }
 
     return instanceId;
+}
+
+export async function renewBrokerLock(instanceId : string){
+    const result = await runScript('renewlock' , [qeBrokerLock()] , [instanceId , String(BROKER_LOCK_TTL_MS)])
+    if(result === 1) return true;
+    return false;
 }
