@@ -46,3 +46,9 @@ export async function markJobRetry(jobId : string , runAfter : Date){
 
     return result.rows[0];
 }
+
+export async function getLiveJobs(){
+    const result = await pool.query(`SELECT id , type , priority , status , enqueued_at , run_after from jobs WHERE status IN ('pending' , 'active')`);
+
+    return result.rows;
+}
