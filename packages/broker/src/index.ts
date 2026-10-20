@@ -5,7 +5,7 @@ import { wakeAllForShutdown } from "./core/waiters.js";
 import { loadAllScripts } from "./store/redis/scripts/loader.js";
 import { startLoops, stopLoops } from "./loops/index.js";
 import { rebuildFromPostgres } from "./core/rebuild.js";
-import { acquireBrokerLock, startLockRenewal } from "./singleton.js";
+import { acquireBrokerLock, releaseBrokerLock, startLockRenewal } from "./singleton.js";
 
 await redisClient.connect();
 await loadAllScripts();
@@ -15,16 +15,18 @@ const recoveredJobs = await rebuildFromPostgres();
 console.log(recoveredJobs);
 startLoops();
 
-const listenObject = app.listen(config.port , () => {
+const listenObject = app.listen(config.port, () => {
     console.log(`Broker listening on port ${config.port}`)
 })
 
-process.on('SIGTERM' , shutDownAll);
-process.on('SIGINT' , shutDownAll);
+process.on('SIGTERM', shutDownAll);
+process.on('SIGINT', shutDownAll);
 
-function shutDownAll(){
+async function shutDownAll() {
     console.log(`SHUTTING DOWN..................`);
+    clearInterval(timer);
     stopLoops();
     wakeAllForShutdown();
-    listenObject.close(() => {process.exit(0)});
+    await releaseBrokerLock(instanceId);
+    listenObject.close(() => { process.exit(0) });
 }

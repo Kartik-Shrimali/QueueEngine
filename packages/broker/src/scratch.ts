@@ -2,7 +2,7 @@ import { enqueueJob } from "./core/enqueue.js";
 import { clearQueueState, rebuildFromPostgres } from "./core/rebuild.js";
 import { decideReclaim, findExpiredJobs, reclaimExpired, reclaimJob } from "./core/reclaim.js";
 import { sweepOnce } from "./core/sweep.js";
-import { acquireBrokerLock, renewBrokerLock, startLockRenewal } from "./singleton.js";
+import { acquireBrokerLock, releaseBrokerLock, renewBrokerLock, startLockRenewal } from "./singleton.js";
 import { markAttemptAbandoned } from "./store/pg/attempts.js";
 import { getLiveJobs, getStalePendingJobs, markJobAbandoned, markJobActive, markJobPending } from "./store/pg/jobs.js";
 import { redisClient } from "./store/redis/client.js";
@@ -16,9 +16,12 @@ async function main() {
 
   const id = await acquireBrokerLock();
 
-  const result = await startLockRenewal(id);
-
+  const result = await releaseBrokerLock('wrong-id');
   console.log(result);
+  const result2 = await releaseBrokerLock(id);
+  console.log(result2);
+
+  process.exit(0);
 }
 
 main();

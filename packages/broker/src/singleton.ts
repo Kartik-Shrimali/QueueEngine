@@ -36,3 +36,11 @@ export function startLockRenewal(instanceId : string){
         }
     } , BROKER_LOCK_RENEW_MS)
 }
+
+export async function releaseBrokerLock(instanceId : string){
+    const result = await runScript('releaselock' , [qeBrokerLock()] , [instanceId]);
+
+    if(result === 1) return true;
+
+    return false;
+}
