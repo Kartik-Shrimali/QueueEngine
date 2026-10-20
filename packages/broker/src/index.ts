@@ -6,6 +6,14 @@ import { loadAllScripts } from "./store/redis/scripts/loader.js";
 import { startLoops, stopLoops } from "./loops/index.js";
 import { rebuildFromPostgres } from "./core/rebuild.js";
 import { acquireBrokerLock, releaseBrokerLock, startLockRenewal } from "./singleton.js";
+import { pool } from "./store/pg/client.js";
+
+try{
+    await pool.query(`SELECT 1`)
+}catch(error : any){
+    console.error(`Some error while connecting to postgres.Error : ` , error.code)
+    process.exit(1);
+}
 
 await redisClient.connect();
 await loadAllScripts();
