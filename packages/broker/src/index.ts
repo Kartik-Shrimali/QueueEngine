@@ -5,9 +5,12 @@ import { wakeAllForShutdown } from "./core/waiters.js";
 import { loadAllScripts } from "./store/redis/scripts/loader.js";
 import { startLoops, stopLoops } from "./loops/index.js";
 import { rebuildFromPostgres } from "./core/rebuild.js";
+import { acquireBrokerLock, startLockRenewal } from "./singleton.js";
 
 await redisClient.connect();
 await loadAllScripts();
+const instanceId = await acquireBrokerLock();
+const timer = startLockRenewal(instanceId);
 const recoveredJobs = await rebuildFromPostgres();
 console.log(recoveredJobs);
 startLoops();
