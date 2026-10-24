@@ -1,6 +1,6 @@
 import { computeScore, type Priority } from "@queueengine/shared";
 import { redisClient } from "../store/redis/client.js";
-import { qeActive, qeLease, qeReady } from "../store/redis/keys.js";
+import { qeActive, qeLease, qeReady, qeType } from "../store/redis/keys.js";
 import { getJobById, markJobAbandoned, markJobPending } from "../store/pg/jobs.js";
 import { runScript } from "../store/redis/scripts/loader.js";
 import { markAttemptAbandoned } from "../store/pg/attempts.js";
@@ -36,7 +36,10 @@ export async function reclaimJob(jobId: string) {
     if (result === 0) return
 
     if (reclaimDecision.action === 'requeue') { await markJobPending(jobId); }
-    else { await markJobAbandoned(jobId) }
+    else {
+        await markJobAbandoned(jobId)
+        await redisClient.del(qeType(jobId));
+    }
 
     await markAttemptAbandoned(jobId)
 

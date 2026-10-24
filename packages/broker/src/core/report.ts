@@ -1,7 +1,7 @@
 import { AppError, computeBackoff } from "@queueengine/shared";
 import { finalizeAttempt } from "../store/pg/attempts.js";
 import { getJobById, markJobRetry, updateJobStatus } from "../store/pg/jobs.js"
-import { qeActive, qeDelayed, qeLease } from "../store/redis/keys.js";
+import { qeActive, qeDelayed, qeLease, qeType } from "../store/redis/keys.js";
 import { runScript } from "../store/redis/scripts/loader.js";
 import { redisClient } from "../store/redis/client.js";
 
@@ -14,6 +14,7 @@ export async function reportResult(jobId: string,  leaseToken : string , outcome
     if (outcome == 'succeeded') {
         const response = await updateJobStatus(jobId, 'completed');
         await finalizeAttempt(jobId , leaseToken , 'succeeded');
+        await redisClient.del(qeType(jobId))
         return response;
     }
     if (outcome == 'failed') {
@@ -31,6 +32,7 @@ export async function reportResult(jobId: string,  leaseToken : string , outcome
         }            
         const response = await updateJobStatus(jobId, 'dead', 'exhausted');
         await finalizeAttempt(jobId , leaseToken , 'failed' , errorMessage);
+        await redisClient.del(qeType(jobId));
         return response;
     } 
 }
