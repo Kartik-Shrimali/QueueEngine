@@ -24,6 +24,10 @@ register('flaky_api' , async(payload) =>{
     if(num < 0.4) throw new Error('There was some error');
 })
 
+register('bench_io_200' , async(payload)=> {
+    await new Promise((resolve) => setTimeout(resolve , 200))
+})
+
 const worker = createWorker({
     brokerUrl : 'http://localhost:3000',
     apiKey : "dev_worker_key_change_me"
