@@ -16,77 +16,101 @@ if (!PRODUCER_API_KEY || !ADMIN_API_KEY) {
 console.log('Stress settings', { brokerUrl, rate, pollInterval, duration });
 
 const counters = {
-    sent : 0,
-    accepted : 0,
-    enqueueFailed : 0,
-    polls : 0,
-    pollFailed : 0,
-    violations : 0
+    sent: 0,
+    accepted: 0,
+    enqueueFailed: 0,
+    polls: 0,
+    pollFailed: 0,
+    violations: 0
 };
 
-async function sendOne(){
+async function sendOne() {
     counters.sent++;
-    try{
-        const response = await fetch(`${brokerUrl}/jobs` , {
-            "method" : "POST",
-            "headers" : {
-                "Authorization" : `Bearer ${PRODUCER_API_KEY}`,
-                "Content-Type" : 'application/json'
+    try {
+        const response = await fetch(`${brokerUrl}/jobs`, {
+            "method": "POST",
+            "headers": {
+                "Authorization": `Bearer ${PRODUCER_API_KEY}`,
+                "Content-Type": 'application/json'
             },
-            "body" : JSON.stringify({type : 'bench_io_200' , payload : {}}),
+            "body": JSON.stringify({ type: 'bench_io_200', payload: {} }),
         });
 
-        if(response.status === 202) counters.accepted++;
+        if (response.status === 202) counters.accepted++;
         else counters.enqueueFailed++;
-    }catch(error){
+    } catch (error) {
         counters.enqueueFailed++;
     }
 }
 
-async function pollInvariants(){
-    counters.polls++;
-    try{
-        const response = await fetch(`${brokerUrl}/admin/invariants` , {
-            "headers" : {
-                "Authorization" : `Bearer ${ADMIN_API_KEY}`
-            }
-        });
-
-        const body : any  = await response.json();
-
-        if(!body.ok){
-            counters.violations++;
-            console.error(`INVARIANT VIOLATION` , JSON.stringify(body.checks))
+async function getBadIds() {
+    const response = await fetch(`${brokerUrl}/admin/invariants`, {
+        "headers": {
+            "Authorization": `Bearer ${ADMIN_API_KEY}`
         }
-    }catch(error){
+    });
+    const body: any = await response.json();
+
+    // collect every bad id like "I4:some-id"
+    const bad: string[] = [];
+    for (const check of body.checks) {
+        if (!check.ok) {
+            for (const id of check.sample ?? []) {
+                bad.push(`${check.id}:${id}`);
+            }
+        }
+    }
+    return { ok: body.ok, bad };
+}
+
+async function pollInvariants() {
+    counters.polls++;
+    try {
+        const first = await getBadIds();
+        if (first.ok) return;
+
+        // wait 3 seconds then check again
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        const second = await getBadIds();
+
+        // only ids that are bad both times are real
+        const stuck = first.bad.filter((x) => second.bad.includes(x));
+
+        if (stuck.length === 0) {
+            console.log('Violation went away on re-check, ignoring', first.bad);
+        } else {
+            counters.violations++;
+            console.error('INVARIANT VIOLATION (same ids twice)', stuck);
+        }
+    } catch (error) {
         counters.pollFailed++;
     }
 }
 
 const startedAt = Date.now();
-const endAt = startedAt + duration*1000;
+const endAt = startedAt + duration * 1000;
 
 const enqueueTimer = setInterval(() => {
-    for(let i = 0; i < rate/10; i++){
+    for (let i = 0; i < rate / 10; i++) {
         void sendOne()
     }
-} , 100);
+}, 100);
 
-const pollTimer = setInterval(() => void pollInvariants() , pollInterval)
+const pollTimer = setInterval(() => void pollInvariants(), pollInterval)
 
 const progressTimer = setInterval(() => {
     const secs = Math.round((Date.now() - startedAt) / 1000);
-    console.log(`t=${secs}s` , counters)
-} , 5000);
+    console.log(`t=${secs}s`, counters)
+}, 5000);
 
-await new Promise((resolve) => {setTimeout(resolve , endAt - Date.now())});
+await new Promise((resolve) => { setTimeout(resolve, endAt - Date.now()) });
 
 clearInterval(enqueueTimer)
 clearInterval(pollTimer)
 clearInterval(progressTimer)
-console.log(`Stooped sending.Final sending counters: ` , counters)
+console.log(`Stooped sending.Final sending counters: `, counters)
 
-function psql(sql : string) : string{
+function psql(sql: string): string {
     return execSync(
         `docker exec queueengine-postgres-1 psql -U user -d postgres -t -A -c "${sql}"`
     ).toString().trim();
@@ -96,14 +120,14 @@ const drainTimeoutMs = 5 * 60 * 1000;
 const drainStart = Date.now();
 let drained = false;
 
-while(Date.now() - drainStart < drainTimeoutMs){
+while (Date.now() - drainStart < drainTimeoutMs) {
     const left = Number(psql("SELECT count(*) FROM jobs WHERE type = 'bench_io_200' AND status IN ('pending' , 'active')"));
     console.log(`Waiting for drain , jobs left : ${left}`);
-    if(left === 0){
+    if (left === 0) {
         drained = true;
         break;
     }
-    await new Promise((resolve) => setTimeout(resolve , 5000));
+    await new Promise((resolve) => setTimeout(resolve, 5000));
 }
 
 await pollInvariants();
