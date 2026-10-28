@@ -1,5 +1,5 @@
 import { computeScore } from "@queueengine/shared";
-import { getStalePendingJobs } from "../store/pg/jobs.js";
+import { getJobById, getStalePendingJobs } from "../store/pg/jobs.js";
 import { redisClient } from "../store/redis/client.js";
 import { qeActive, qeDelayed, qeReady, qeType } from "../store/redis/keys.js";
 import { wakeOne } from "./waiters.js";
@@ -8,6 +8,12 @@ export async function sweepOnce() {
     const staleJobs = await getStalePendingJobs();
     const repairedIds = [];
     for (const job of staleJobs) {
+        const PostgresJob = await getJobById(job.id);
+
+        if(!PostgresJob || PostgresJob.status !== 'pending'){
+            continue;
+        }
+
         let readyBool = await redisClient.zScore(qeReady(), job.id);
         let delayedBool = await redisClient.zScore(qeDelayed(), job.id);
         let activeBool = await redisClient.zScore(qeActive(), job.id);
