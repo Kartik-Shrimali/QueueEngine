@@ -4,6 +4,7 @@ export type ActiveController = { current: AbortController | null }
 
 export async function startPolling(request: (method: string, path: string, body?: unknown, signal?: AbortSignal) => Promise<any>, concurrency: number, stopping: { value: boolean }, activeController: ActiveController, heldLeases: Map<string, string>, workerId: string, lostJobs: Set<string>) {
     let inFlight = 0;
+    let wakeUp : (() => void) | null = null;
     while (1) {
 
         if (stopping.value && inFlight === 0) break;
@@ -14,7 +15,7 @@ export async function startPolling(request: (method: string, path: string, body?
         }
 
         if (concurrency - inFlight <= 0) {
-            await new Promise((resolve) => setTimeout(resolve, 200));
+            await new Promise<void>((resolve) => {wakeUp = () => resolve();});
             continue;
         }
         const controller = new AbortController();
@@ -31,6 +32,10 @@ export async function startPolling(request: (method: string, path: string, body?
                 heldLeases.set(job.id, job.leaseToken)
                 executeJob(job).then(async (result) => {
                     inFlight--;
+                    if(wakeUp){
+                        wakeUp();
+                        wakeUp = null;
+                    }
                     heldLeases.delete(job.id)
                     if (lostJobs.has(job.id)) {
                         lostJobs.delete(job.id);
