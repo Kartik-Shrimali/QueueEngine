@@ -7,6 +7,7 @@ import { startLoops, stopLoops } from "./loops/index.js";
 import { rebuildFromPostgres } from "./core/rebuild.js";
 import { acquireBrokerLock, releaseBrokerLock, startLockRenewal } from "./singleton.js";
 import { pool } from "./store/pg/client.js";
+import { startWsServer } from "./events/ws/server.js";
 
 try{
     await pool.query(`SELECT 1`)
@@ -27,6 +28,8 @@ const listenObject = app.listen(config.port, () => {
     console.log(`Broker listening on port ${config.port}`)
 })
 
+const closeAllClients = startWsServer(listenObject);
+
 process.on('SIGTERM', shutDownAll);
 process.on('SIGINT', shutDownAll);
 
@@ -35,6 +38,7 @@ async function shutDownAll() {
     clearInterval(timer);
     stopLoops();
     wakeAllForShutdown();
+    closeAllClients();
     await releaseBrokerLock(instanceId);
     listenObject.close(() => { process.exit(0) });
 }

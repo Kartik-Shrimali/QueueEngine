@@ -14,9 +14,11 @@
   "dependencies": {
     "@queueengine/shared": "workspace:*",
     "express": "^5.2.1",
-    "redis": "^6.2.1"
+    "redis": "^6.2.1",
+    "ws": "^8.22.1"
   },
   "devDependencies": {
-    "@types/express": "^5.0.6"
+    "@types/express": "^5.0.6",
+    "@types/ws": "^8.18.2"
   }
 }
