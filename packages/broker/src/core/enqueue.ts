@@ -4,6 +4,7 @@ import { insertJob } from "../store/pg/jobs.js";
 import { redisClient } from "../store/redis/client.js";
 import { qeDelayed, qeReady, qeType } from "../store/redis/keys.js";
 import { wakeOne } from "./waiters.js";
+import { emitJobEvent } from "../events/bus.js";
 
 
 export async function enqueueJob(params: {
@@ -23,5 +24,6 @@ export async function enqueueJob(params: {
         await redisClient.ZADD(qeDelayed(), { score: params.runAfter.getTime(), value: job.id })
     }
     await redisClient.SET(qeType(job.id) , params.type)
+    emitJobEvent({jobId : job.id , type : params.type , from : null , to : 'pending' , attempt : 0});
     return { id: job.id, status: job.status, enqueuedAt: job.enqueued_at };
 }

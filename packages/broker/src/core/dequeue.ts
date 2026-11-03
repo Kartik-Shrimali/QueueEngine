@@ -4,6 +4,7 @@ import {  markJobActive } from "../store/pg/jobs.js";
 import { insertAttempt } from "../store/pg/attempts.js";
 import { randomUUID } from "crypto";
 import { runScript } from "../store/redis/scripts/loader.js";
+import { emitJobEvent } from "../events/bus.js";
 
 export async function dequeue(workerId : string , count : number = 1 , types ?: string[]){
     const jobs = [];
@@ -21,6 +22,7 @@ export async function dequeue(workerId : string , count : number = 1 , types ?: 
         const leaseExpiresAt = new Date(currentTime + LEASE_TTL_MS);
         const job = await markJobActive(jobId , workerId , token , leaseExpiresAt);
         await insertAttempt(jobId , job.attempts ,workerId , token);
+        emitJobEvent({jobId : job.id , type : job.type , from : 'pending' , to : 'active' , attempt : job.attempts});
         jobs.push({...job , leaseToken : token , leaseExpiresAt : leaseExpiresAt.toISOString()})
     }
     return jobs;    

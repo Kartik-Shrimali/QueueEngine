@@ -4,6 +4,7 @@ import { getJobById, markJobRetry, updateJobStatus } from "../store/pg/jobs.js"
 import { qeActive, qeDelayed, qeLease, qeType } from "../store/redis/keys.js";
 import { runScript } from "../store/redis/scripts/loader.js";
 import { redisClient } from "../store/redis/client.js";
+import { emitJobEvent } from "../events/bus.js";
 
 export async function reportResult(jobId: string,  leaseToken : string , outcome: 'succeeded' | 'failed' , errorMessage? : string) {
     const released = await runScript('release' , [qeActive()] , [qeLease('') , jobId , leaseToken])
@@ -15,6 +16,7 @@ export async function reportResult(jobId: string,  leaseToken : string , outcome
         const response = await updateJobStatus(jobId, 'completed');
         await finalizeAttempt(jobId , leaseToken , 'succeeded');
         await redisClient.del(qeType(jobId))
+        emitJobEvent({jobId : jobId , from : 'active' , to : 'completed' , attempt : response.attempts , type : response.type})
         return response;
     }
     if (outcome == 'failed') {
@@ -28,11 +30,13 @@ export async function reportResult(jobId: string,  leaseToken : string , outcome
             const response = await markJobRetry(jobId , runAfter)
             await redisClient.zAdd(qeDelayed() , {score : runAfter.getTime() ,value :  jobId});
             await finalizeAttempt(jobId , leaseToken , 'failed' , errorMessage)
+            emitJobEvent({jobId : jobId , from : 'active' , to : 'pending' , attempt : job.attempts , type : job.type})
             return response;
         }            
         const response = await updateJobStatus(jobId, 'dead', 'exhausted');
         await finalizeAttempt(jobId , leaseToken , 'failed' , errorMessage);
         await redisClient.del(qeType(jobId));
+        emitJobEvent({jobId : jobId , from : 'active' , to : 'dead' , attempt : response.attempts , type : response.type})
         return response;
     } 
 }

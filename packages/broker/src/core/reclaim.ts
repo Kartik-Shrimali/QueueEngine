@@ -5,6 +5,7 @@ import { getJobById, markJobAbandoned, markJobPending } from "../store/pg/jobs.j
 import { runScript } from "../store/redis/scripts/loader.js";
 import { markAttemptAbandoned } from "../store/pg/attempts.js";
 import { wakeOne } from "./waiters.js";
+import { emitJobEvent } from "../events/bus.js";
 
 export async function findExpiredJobs() {
     const jobs = await redisClient.zRangeByScore(qeActive(), 0, Date.now());
@@ -40,8 +41,9 @@ export async function reclaimJob(jobId: string) {
         await markJobAbandoned(jobId)
         await redisClient.del(qeType(jobId));
     }
-
+    
     await markAttemptAbandoned(jobId)
+    emitJobEvent({jobId : job.id , from : 'active' , to : reclaimDecision.action === 'requeue' ? 'pending' : 'dead' , type : job.type , attempt : job.attempts});
 
     if (reclaimDecision.action === 'requeue') wakeOne();
 }
