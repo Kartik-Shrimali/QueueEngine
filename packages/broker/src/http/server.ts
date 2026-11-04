@@ -8,6 +8,7 @@
     import { redisClient } from "../store/redis/client.js";
     import { pool } from "../store/pg/client.js";
     import { isBrokerLockHeld } from "../singleton.js";
+import { dashboardRouter } from "./routes/dashboard.js";
 
     const app : express.Express = express();
     app.use(express.json({limit : '300kb'}));
@@ -60,6 +61,7 @@
     app.use(jobRouter);
     app.use(workerRouter);
     app.use(adminRouter);
+    app.use(dashboardRouter);
     app.use(errorMapper);
 
     export default app

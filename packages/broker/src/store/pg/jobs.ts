@@ -58,3 +58,26 @@ export async function getStalePendingJobs(){
 
     return result.rows;
 }
+
+export async function getStatsCounts(){
+    const result = await pool.query(`SELECT 
+        count(*) FILTER (WHERE status = 'pending' AND run_after <= now() AND priority = 'critical') AS critical,
+        count(*) FILTER (WHERE status = 'pending' AND run_after <= now() AND priority = 'high') AS high,
+        count(*) FILTER (WHERE status = 'pending' AND run_after <= now() AND priority = 'normal') AS normal,
+        count(*) FILTER (WHERE status = 'pending' AND run_after <= now() AND priority = 'low') AS low,
+        count(*) FILTER (WHERE status = 'pending' AND run_after <= now()) AS ready_total,
+        count(*) FILTER (WHERE status = 'pending' AND run_after > now()) AS delayed,
+        count(*) FILTER (WHERE status = 'active') AS active,
+        count(*) FILTER (WHERE status = 'dead') AS dead_total,
+        min(enqueued_at) FILTER (WHERE status = 'pending' AND run_after <= now()) AS oldest_enqueued_at
+        FROM jobs
+    `);
+
+    return result.rows[0];
+}
+
+export async function getActiveByWorker(){
+    const result = await pool.query(`SELECT worker_id , count(*) AS in_flight FROM jobs WHERE status = 'active' GROUP BY worker_id`);
+
+    return result.rows;
+}

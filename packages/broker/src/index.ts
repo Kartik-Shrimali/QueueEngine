@@ -8,6 +8,7 @@ import { rebuildFromPostgres } from "./core/rebuild.js";
 import { acquireBrokerLock, releaseBrokerLock, startLockRenewal } from "./singleton.js";
 import { pool } from "./store/pg/client.js";
 import { startWsServer } from "./events/ws/server.js";
+import { startStats } from "./events/stats.js";
 
 try{
     await pool.query(`SELECT 1`)
@@ -23,6 +24,7 @@ const timer = startLockRenewal(instanceId);
 const recoveredJobs = await rebuildFromPostgres();
 console.log(recoveredJobs);
 startLoops();
+const statsTimer = startStats();
 
 const listenObject = app.listen(config.port, () => {
     console.log(`Broker listening on port ${config.port}`)
@@ -36,6 +38,7 @@ process.on('SIGINT', shutDownAll);
 async function shutDownAll() {
     console.log(`SHUTTING DOWN..................`);
     clearInterval(timer);
+    clearInterval(statsTimer);
     stopLoops();
     wakeAllForShutdown();
     closeAllClients();
