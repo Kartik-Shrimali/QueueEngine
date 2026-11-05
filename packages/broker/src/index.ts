@@ -44,4 +44,8 @@ async function shutDownAll() {
     closeAllClients();
     await releaseBrokerLock(instanceId);
     listenObject.close(() => { process.exit(0) });
+    listenObject.closeIdleConnections();
+    setTimeout(() => {
+        listenObject.closeAllConnections();
+    } , 2000)
 }
