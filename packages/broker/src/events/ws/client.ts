@@ -5,5 +5,6 @@ export type Client = {
     socket : WebSocket,
     pendingState : string | null,
     pendingEvents : JobEvent[],
-    dropped : number
+    dropped : number,
+    strikes : number
 }

@@ -22,7 +22,7 @@ export function startWsServer(httpServer: Server) {
         }
 
         wss.handleUpgrade(req, socket, head, (ws) => {
-            const client: Client = { socket: ws, pendingState: null, pendingEvents: [], dropped: 0 };
+            const client: Client = { socket: ws, pendingState: null, pendingEvents: [], dropped: 0, strikes: 0 };
             clients.add(client);
             ws.on('close', () => {
                 clients.delete(client);
@@ -41,7 +41,7 @@ export function startWsServer(httpServer: Server) {
             client.pendingEvents.push(event);
         }
     }
-     
+
     bus.on('job', onJob);
 
     const stateTimer = setInterval(() => {
@@ -57,28 +57,35 @@ export function startWsServer(httpServer: Server) {
     }, WS_STATE_FLUSH_MS)
 
     const eventTimer = setInterval(() => {
-        for(const client of clients){
-            if(client.pendingEvents.length === 0 || client.socket.readyState !== 1){
+        for (const client of clients) {
+            if (client.pendingEvents.length === 0 || client.socket.readyState !== 1) {
                 continue;
             }
 
-            if(client.socket.bufferedAmount > WS_BUFFER_LIMIT_BYTES){
+            if (client.socket.bufferedAmount > WS_BUFFER_LIMIT_BYTES) {
                 client.dropped += client.pendingEvents.length;
                 client.pendingEvents = [];
-            }else{
-                client.socket.send(JSON.stringify({t : 'events' , dropped : client.dropped , events : client.pendingEvents}));
-                client.dropped = 0; 
+                client.strikes++;
+                client.socket.send(JSON.stringify({ t: 'stale', reason: "buffer_limit", strikes: client.strikes }));
+                if(client.strikes === 3){
+                    console.log("Client was closed after 3 strikes.Dropped: ", client.dropped);
+                    client.socket.close(1013 , 'Client is in a stale state');
+                }
+            } else {
+                client.socket.send(JSON.stringify({ t: 'events', dropped: client.dropped, events: client.pendingEvents }));
+                client.dropped = 0;
                 client.pendingEvents = []
+                client.strikes = 0;
             }
         }
-    } , WS_EVENT_FLUSH_MS)
+    }, WS_EVENT_FLUSH_MS)
 
     return closeAllClients;
 
     function closeAllClients() {
         clearInterval(stateTimer);
         clearInterval(eventTimer);
-        bus.off('job' , onJob);
+        bus.off('job', onJob);
         for (const client of clients) {
             client.socket.close(1001);
         }
