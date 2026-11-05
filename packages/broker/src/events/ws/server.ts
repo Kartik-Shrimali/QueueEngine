@@ -22,7 +22,7 @@ export function startWsServer(httpServer: Server) {
         }
 
         wss.handleUpgrade(req, socket, head, (ws) => {
-            const client: Client = { socket: ws, pendingState: null, pendingEvents: [], dropped: 0, strikes: 0 };
+            const client: Client = { socket: ws, pendingState: null, pendingEvents: [], dropped: 0, strikes: 0, types: null, statuses: null };
             clients.add(client);
             ws.on('close', () => {
                 clients.delete(client);
@@ -33,11 +33,28 @@ export function startWsServer(httpServer: Server) {
             })
 
             ws.send(JSON.stringify({ t: "snapshot", serverTime: new Date().toISOString(), stats: getSnapshot() }));
+
+            ws.on('message', (data) => {
+                try {
+                    const parsedData = JSON.parse(data.toString());
+                    if(parsedData.t !== 'subscribe') return;
+
+                    const filters = parsedData.filters ?? {};
+                    client.types = (Array.isArray(filters.types) && filters.types.length > 0) ? filters.types : null;
+                    client.statuses = (Array.isArray(filters.statuses) && filters.statuses.length > 0) ? filters.statuses : null;
+
+
+                } catch (error: any) {
+
+                }
+            })
         })
     })
 
     const onJob = (event: JobEvent) => {
         for (const client of clients) {
+            if(client.types !== null && !client.types.includes(event.type)) continue;
+            if(client.statuses !== null && !client.statuses.includes(event.to))continue;
             client.pendingEvents.push(event);
         }
     }
@@ -67,9 +84,9 @@ export function startWsServer(httpServer: Server) {
                 client.pendingEvents = [];
                 client.strikes++;
                 client.socket.send(JSON.stringify({ t: 'stale', reason: "buffer_limit", strikes: client.strikes }));
-                if(client.strikes === 3){
+                if (client.strikes === 3) {
                     console.log("Client was closed after 3 strikes.Dropped: ", client.dropped);
-                    client.socket.close(1013 , 'Client is in a stale state');
+                    client.socket.close(1013, 'Client is in a stale state');
                 }
             } else {
                 client.socket.send(JSON.stringify({ t: 'events', dropped: client.dropped, events: client.pendingEvents }));
