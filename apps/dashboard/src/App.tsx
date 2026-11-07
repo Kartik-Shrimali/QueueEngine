@@ -1,12 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { connect } from "./lib/ws";
 import Login from "./components/Login";
-import {type Stats} from "@queueengine/shared"
+import {type JobEvent, type Stats} from "@queueengine/shared"
 import Depth from "./components/Depth";
+import type { LogRow } from "./lib/types";
+import JobLog from "./components/JobLog";
 
 export default function App() {
     const [adminKey , setAdminKey] = useState<string | null>(null);
     const [stats , setStats] = useState<Stats | null>(null);
+    const [rows , setRows] = useState<LogRow[]>([]);
+    const nextId = useRef(0)
 
     useEffect(() => {
         if(adminKey === null) return;   
@@ -16,6 +20,32 @@ export default function App() {
             (msg) => {
                 if(msg.t === "snapshot" || msg.t === "state"){
                     setStats(msg.stats);
+                }
+                if(msg.t === "events"){
+                    const eventList : LogRow[] = [];
+                    const reversedList = msg.events.reverse();
+
+                    reversedList.forEach((event : JobEvent) => {
+                        eventList.push({
+                            kind : "event",
+                            id : nextId.current,
+                            event : event
+                        })
+                        nextId.current++;
+                    })
+
+                    if(msg.dropped > 0){
+                        eventList.push({
+                            kind : "gap",
+                            id : nextId.current,
+                            dropped : msg.dropped
+                        })
+                        nextId.current++;
+                    }
+
+                    setRows((prev) => {
+                        return [...eventList , ...prev].slice(0,200)
+                    })
                 }
             }
         );
@@ -27,6 +57,7 @@ export default function App() {
             <h1 className="text-2xl font-semibold">QueueEngine</h1>
             {adminKey === null ? <Login onLogin={setAdminKey}></Login> : null}
             {adminKey !== null ? <Depth stats={stats}></Depth> : null}
+            {adminKey !== null ? <JobLog rows={rows}/> : null}
         </div>
     );
 }
