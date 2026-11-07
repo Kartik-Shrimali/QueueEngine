@@ -3,4 +3,5 @@ export * from "./constants.js";
 export * from "./score.js";
 export * from "./backoff.js";
 export * from "./errors.js";
-export * from "./stats.js"
+export * from "./stats.js";
+export * from "./events.js"

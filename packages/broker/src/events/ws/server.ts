@@ -2,9 +2,9 @@ import type { Server } from "node:http";
 import { WebSocketServer, type WebSocket } from "ws";
 import { config } from "../../config.js";
 import type { Client } from "./client.js";
-import { WS_BUFFER_LIMIT_BYTES, WS_EVENT_FLUSH_MS, WS_STATE_FLUSH_MS } from "@queueengine/shared";
+import { WS_BUFFER_LIMIT_BYTES, WS_EVENT_FLUSH_MS, WS_STATE_FLUSH_MS, type JobEvent } from "@queueengine/shared";
 import { getSnapshot } from "../stats.js";
-import { bus, type JobEvent } from "../bus.js";
+import { bus} from "../bus.js";
 
 export function startWsServer(httpServer: Server) {
     const wss = new WebSocketServer({ noServer: true });

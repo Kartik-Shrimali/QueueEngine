@@ -1,14 +1,5 @@
-import type { JobStatus } from "@queueengine/shared";
+import type { JobEvent } from "@queueengine/shared";
 import { EventEmitter } from "node:events";
-
-export type JobEvent = {
-    jobId : string,
-    type : string,
-    from : JobStatus | null,
-    to : JobStatus,
-    attempt : number,
-    at : string
-}
 
 export const bus = new EventEmitter();
 

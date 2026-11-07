@@ -1,5 +1,5 @@
-import { HEARTBEAT_INTERVAL_MS, WS_STATE_FLUSH_MS, type Stats ,  } from "@queueengine/shared";
-import { bus, type JobEvent } from "./bus.js";
+import { HEARTBEAT_INTERVAL_MS, WS_STATE_FLUSH_MS, type JobEvent, type Stats} from "@queueengine/shared";
+import { bus } from "./bus.js";
 import { getActiveByWorker, getStatsCounts } from "../store/pg/jobs.js";
 import { redisClient } from "../store/redis/client.js";
 import { qeWorker } from "../store/redis/keys.js";

@@ -1,6 +1,5 @@
 import type { WebSocket } from "ws"
-import type { JobEvent } from "../bus.js"
-import type { JobStatus } from "@queueengine/shared"
+import type { JobEvent, JobStatus } from "@queueengine/shared"
 
 export type Client = {
     socket : WebSocket,
