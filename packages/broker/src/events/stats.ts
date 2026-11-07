@@ -1,33 +1,8 @@
-import { HEARTBEAT_INTERVAL_MS, WS_STATE_FLUSH_MS } from "@queueengine/shared";
+import { HEARTBEAT_INTERVAL_MS, WS_STATE_FLUSH_MS, type Stats ,  } from "@queueengine/shared";
 import { bus, type JobEvent } from "./bus.js";
 import { getActiveByWorker, getStatsCounts } from "../store/pg/jobs.js";
 import { redisClient } from "../store/redis/client.js";
 import { qeWorker } from "../store/redis/keys.js";
-
-export type Stats = {
-    queueDepth: {
-        critical: number,
-        high: number,
-        normal: number,
-        low: number,
-        total: number,
-    },
-    delayed: number,
-    active: number,
-    deadTotal: number,
-    throughput: {
-        completedPerSec: number,
-        failedPerSec: number,
-        windowSec: number
-    },
-    workers: {
-        workerId: string,
-        inFlight: number,
-        lastSeen: string,
-        alive: boolean
-    }[],
-    oldestPendingAgeMs: number
-};
 
 let snapshot: Stats = {
     queueDepth: { critical: 0, high: 0, normal: 0, low: 0, total: 0 },
