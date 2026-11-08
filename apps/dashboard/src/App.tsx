@@ -6,6 +6,7 @@ import Depth from "./components/Depth";
 import type { ConnectionStatus, LogRow, ThroughputPoint } from "./lib/types";
 import JobLog from "./components/JobLog";
 import Workers from "./components/Workers";
+import Throughput from "./components/Throughput";
 
 const statusText: Record<ConnectionStatus, string> = {
     connecting: "Connecting",
@@ -93,6 +94,7 @@ export default function App() {
             {adminKey === null ? <Login onLogin={setAdminKey}></Login> : null}
             {adminKey !== null ? <Depth stats={stats}></Depth> : null}
             {adminKey !== null ? <Workers stats={stats}></Workers> : null}
+            {adminKey !== null ? <Throughput history={history} /> : null}
             {adminKey !== null ? <JobLog rows={rows} /> : null}
         </div>
     );
