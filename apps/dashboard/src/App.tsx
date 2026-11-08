@@ -5,6 +5,7 @@ import {type JobEvent, type Stats} from "@queueengine/shared"
 import Depth from "./components/Depth";
 import type { LogRow } from "./lib/types";
 import JobLog from "./components/JobLog";
+import Workers from "./components/Workers";
 
 export default function App() {
     const [adminKey , setAdminKey] = useState<string | null>(null);
@@ -57,6 +58,7 @@ export default function App() {
             <h1 className="text-2xl font-semibold">QueueEngine</h1>
             {adminKey === null ? <Login onLogin={setAdminKey}></Login> : null}
             {adminKey !== null ? <Depth stats={stats}></Depth> : null}
+            {adminKey !== null ? <Workers stats={stats}></Workers> : null}
             {adminKey !== null ? <JobLog rows={rows}/> : null}
         </div>
     );
