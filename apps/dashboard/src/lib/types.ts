@@ -9,4 +9,12 @@ export type LogRow =
         kind: "gap",
         id: number,
         dropped: number
-    }
+    };
+
+export type ThroughputPoint = {
+    at : number,
+    completed : number,
+    failed : number
+} 
+
+export type ConnectionStatus = "connecting" | "connected" | "reconnecting" | "failed"
