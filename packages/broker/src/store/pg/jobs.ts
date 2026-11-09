@@ -134,3 +134,9 @@ export async function getJobsPage(jobDetails : {
 
     return {rows , hasMore}
 }
+
+export async function insertReplay(sourceId : string){
+    const result = await pool.query(`INSERT INTO jobs (type , payload , priority , max_attempts , replayed_from) SELECT type , payload , priority , max_attempts , id FROM jobs WHERE id = $1 AND status = 'dead' RETURNING id , status , replayed_from , enqueued_at , type , priority`, [sourceId]);
+
+    return result.rows[0];  
+}

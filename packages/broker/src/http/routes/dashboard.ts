@@ -3,6 +3,7 @@ import { requireScope } from "../middleware/auth.js";
 import { getSnapshot } from "../../events/stats.js";
 import { AppError } from "@queueengine/shared";
 import { getJobsPage } from "../../store/pg/jobs.js";
+import { replayJob } from "../../core/replay.js";
 
 const dashboardRouter: express.Router = express.Router();
 
@@ -97,6 +98,18 @@ dashboardRouter.get('/jobs', requireScope('admin'), async (req, res) => {
 
         throw error;
     }
+})
+
+dashboardRouter.post('/jobs/:id/replay' , requireScope('admin') , async (req , res) => {
+    const id = req.params.id as string;
+    try{
+        const result = await replayJob(id);
+        res.status(201).json({ id : result.id , replayedFrom : result.replayed_from , status : result.status});
+    }catch(error : any){
+        if(error.code === '22P02') throw new AppError('validation_failed' , "id is not a valid job id");
+        throw error;
+    }
+
 })
 
 export { dashboardRouter }
