@@ -81,3 +81,56 @@ export async function getActiveByWorker(){
 
     return result.rows;
 }
+
+export async function getJobsPage(jobDetails : {
+    status ?: string,
+    type ?: string
+    priority ?: string
+    deadReason ?: string,
+    limit : number,
+    cursor ?: {
+        updatedAt : string,
+        id : string
+    }
+}){
+    const conditions : string[] = [];
+    const values : any[] = [];
+
+    if(jobDetails.status){
+        values.push(jobDetails.status);
+        conditions.push(`status = $${values.length}`);
+    }
+    if(jobDetails.type){
+        values.push(jobDetails.type);
+        conditions.push(`type = $${values.length}`);
+    }
+    if(jobDetails.priority){
+        values.push(jobDetails.priority);
+        conditions.push(`priority = $${values.length}`);
+    }
+    if(jobDetails.deadReason){
+        values.push(jobDetails.deadReason);
+        conditions.push(`dead_reason = $${values.length}`);
+    }
+
+    if(jobDetails.cursor){
+        values.push(jobDetails.cursor.updatedAt);
+        values.push(jobDetails.cursor.id);
+
+        conditions.push(`(updated_at,id) < ($${values.length-1}::timestamptz , $${values.length}::uuid)`)
+    }
+
+    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    values.push(jobDetails.limit + 1);
+
+    const result = await pool.query(`SELECT id , type , status , priority , attempts , max_attempts , run_after ,dead_reason , replayed_from , enqueued_at , first_started_at , finished_at , updated_at , updated_at::text AS updated_at_text FROM jobs ${where} ORDER BY updated_at DESC, id DESC LIMIT $${values.length}`, values);
+
+    const rows = result.rows;
+    const hasMore = rows.length > jobDetails.limit;
+
+    if(hasMore){
+        rows.pop();
+    }
+
+    return {rows , hasMore}
+}
