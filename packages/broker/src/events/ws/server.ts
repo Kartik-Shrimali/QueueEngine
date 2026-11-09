@@ -2,9 +2,10 @@ import type { Server } from "node:http";
 import { WebSocketServer, type WebSocket } from "ws";
 import { config } from "../../config.js";
 import type { Client } from "./client.js";
-import { WS_BUFFER_LIMIT_BYTES, WS_EVENT_FLUSH_MS, WS_STATE_FLUSH_MS, type JobEvent } from "@queueengine/shared";
+import { AppError, WS_BUFFER_LIMIT_BYTES, WS_EVENT_FLUSH_MS, WS_STATE_FLUSH_MS, type JobEvent } from "@queueengine/shared";
 import { getSnapshot } from "../stats.js";
-import { bus} from "../bus.js";
+import { bus } from "../bus.js";
+import { replayJob } from "../../core/replay.js";
 
 export function startWsServer(httpServer: Server) {
     const wss = new WebSocketServer({ noServer: true });
@@ -34,16 +35,40 @@ export function startWsServer(httpServer: Server) {
 
             ws.send(JSON.stringify({ t: "snapshot", serverTime: new Date().toISOString(), stats: getSnapshot() }));
 
-            ws.on('message', (data) => {
+            ws.on('message', async (data) => {
                 try {
                     const parsedData = JSON.parse(data.toString());
-                    if(parsedData.t !== 'subscribe') return;
+                    if (parsedData.t === 'subscribe') {
+                        const filters = parsedData.filters ?? {};
+                        client.types = (Array.isArray(filters.types) && filters.types.length > 0) ? filters.types : null;
+                        client.statuses = (Array.isArray(filters.statuses) && filters.statuses.length > 0) ? filters.statuses : null;
+                    }else if(parsedData.t === 'replay'){
+                        const jobId = parsedData.jobId;
+                        const requestId = parsedData.requestId;
 
-                    const filters = parsedData.filters ?? {};
-                    client.types = (Array.isArray(filters.types) && filters.types.length > 0) ? filters.types : null;
-                    client.statuses = (Array.isArray(filters.statuses) && filters.statuses.length > 0) ? filters.statuses : null;
+                        if(typeof jobId !== 'string' || typeof requestId !== 'string'){
+                            ws.send(JSON.stringify({t : 'replay_result' , requestId  , ok : false , error : 'validation_failed'}));
 
+                            return;
+                        }
 
+                        try{
+                            const result = await replayJob(jobId);
+                            ws.send(JSON.stringify({t : "replay_result" , requestId , ok : true , newJobId : result.id}));
+                        }catch(error : any){
+                            let code = 'internal_error';
+
+                            if(error instanceof AppError){
+                                code = error.code;
+                            }else if(error.code === '22P02'){
+                                code = 'validation_failed';
+                            }else{
+                                console.error(error);
+                            }
+
+                            ws.send(JSON.stringify({t : 'replay_result' , requestId , ok : false , error : code}))
+                        }
+                    }
                 } catch (error: any) {
 
                 }
@@ -53,8 +78,8 @@ export function startWsServer(httpServer: Server) {
 
     const onJob = (event: JobEvent) => {
         for (const client of clients) {
-            if(client.types !== null && !client.types.includes(event.type)) continue;
-            if(client.statuses !== null && !client.statuses.includes(event.to))continue;
+            if (client.types !== null && !client.types.includes(event.type)) continue;
+            if (client.statuses !== null && !client.statuses.includes(event.to)) continue;
             client.pendingEvents.push(event);
         }
     }
