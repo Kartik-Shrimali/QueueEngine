@@ -19,3 +19,9 @@ export async function markAttemptAbandoned(jobId : string){
 
     return result.rows[0];
 }
+
+export async function getAttemptHistory(jobId : string){
+    const result = await pool.query(`SELECT * FROM (SELECT attempt_number , worker_id , started_at , ended_at , duration_ms , outcome , error_message FROM job_attempts WHERE job_id = $1 ORDER BY attempt_number DESC LIMIT 20) AS recent ORDER BY attempt_number ASC` , [jobId]);
+
+    return result.rows;
+}

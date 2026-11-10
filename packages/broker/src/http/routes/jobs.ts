@@ -3,6 +3,7 @@ import { requireScope } from "../middleware/auth.js";
 import { AppError, DEFAULT_MAX_ATTEMPTS, MAX_PAYLOAD_BYTES, type Priority } from "@queueengine/shared";
 import { enqueueJob } from "../../core/enqueue.js";
 import { getJobById } from "../../store/pg/jobs.js";
+import { getAttemptHistory } from "../../store/pg/attempts.js";
 
 const typePattern = /^[a-z0-9_.-]+$/;
 
@@ -50,7 +51,9 @@ jobRouter.get('/jobs/:id' , requireScope('producer') , async (req , res) => {
     const id = req.params.id as string
     const job = await getJobById(id);
 
-    if(!job) throw new AppError('not_found' , "No job with that id")
+    if(!job) throw new AppError('not_found' , "No job with that id");
+
+    const history = await getAttemptHistory(id);
 
     const response : any = {
         id : job.id,
@@ -64,7 +67,19 @@ jobRouter.get('/jobs/:id' , requireScope('producer') , async (req , res) => {
         replayedFrom : job.replayed_from,
         enqueuedAt : job.enqueued_at,
         firstStartedAt : job.first_started_at,
-        finishedAt : job.finished_at
+        finishedAt : job.finished_at,
+        totalAttempts : job.attempts,
+        attemptHistory : history.map((row) => {
+            return {
+                attemptNumber : row.attempt_number,
+                workerId : row.worker_id,
+                startedAt : row.started_at,
+                endedAt : row.ended_at,
+                durationMs : row.duration_ms,
+                outcome : row.outcome,
+                errorMessage : row.error_message
+            }
+        })
     }
     
     if(req.callerScope === 'admin' && req.query.includePayload === 'true'){
