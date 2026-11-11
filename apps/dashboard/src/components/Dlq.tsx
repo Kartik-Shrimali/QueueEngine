@@ -69,11 +69,22 @@ export default function Dlq(props: { adminKey: string }) {
             {errorMessage !== null ? <p className="text-red-500">{errorMessage}</p> : null}
             {errorMessage === null && jobs.length === 0 ? <p>No dead jobs</p> : null}
             {jobs.map((job) => {
+                let reasonClass = "";
+                let reasonMeaning = "";
+
+                if (job.deadReason === "abandoned") {
+                    reasonClass = "text-red-500";
+                    reasonMeaning = "worker died";
+                } else if (job.deadReason === "exhausted") {
+                    reasonClass = "text-amber-500";
+                    reasonMeaning = "handler failed";
+                }
+
                 return (
                     <div key={job.id} onClick={() => {
                         setSelectedId(job.id);
                     }} className={job.id === selectedId ? "cursor-pointer font-bold" : "cursor-pointer"}>
-                        {job.type} , {job.deadReason} , {job.finishedAt ?? "unknown"}
+                        {job.type} , <span className={reasonClass}>{job.deadReason}</span> {reasonMeaning} , {job.finishedAt ?? "unknown"}
                     </div>
                 )
             })}
