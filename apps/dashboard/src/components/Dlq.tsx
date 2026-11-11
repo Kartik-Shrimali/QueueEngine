@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
-import type { JobRow } from "../lib/types";
-import { fetchDeadJobs } from "../lib/api";
+import { type JobDetail, type JobRow } from "../lib/types";
+import { fetchDeadJobs, fetchJobDetail } from "../lib/api";
 
 export default function Dlq(props: { adminKey: string }) {
     const [jobs, setJobs] = useState<JobRow[]>([]);
     const [nextCursor, setCursor] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [selectedId, setSelectedId] = useState<string | null>(null);
+    const [detail, setDetail] = useState<JobDetail | null>(null);
+    const [detailError, setDetailError] = useState<string | null>(null);
 
     useEffect(() => {
         let ignore = false;
@@ -32,6 +35,34 @@ export default function Dlq(props: { adminKey: string }) {
         }
     }, [props.adminKey]);
 
+    useEffect(() => {
+        let ignore = false;
+        if (selectedId === null) {
+            setDetail(null);
+            return;
+        }
+
+        setDetail(null);
+        setDetailError(null);
+
+        async function main(id: string) {
+            try {
+                const jobDetail = await fetchJobDetail(props.adminKey, id)
+                if (ignore === false) {
+                    setDetail(jobDetail);
+                }
+            } catch (error: any) {
+                if (ignore === false) setDetailError("There was some error in fetching job Detail");
+            }
+        }
+
+        main(selectedId);
+
+        return () => {
+            ignore = true
+        }
+    }, [selectedId, props.adminKey])
+
     return (
         <div className="border rounded p-4 mt-6">
             <h2 className="text-lg font-semibold">Dead jobs</h2>
@@ -39,11 +70,27 @@ export default function Dlq(props: { adminKey: string }) {
             {errorMessage === null && jobs.length === 0 ? <p>No dead jobs</p> : null}
             {jobs.map((job) => {
                 return (
-                    <p key={job.id}>
+                    <div key={job.id} onClick={() => {
+                        setSelectedId(job.id);
+                    }} className={job.id === selectedId ? "cursor-pointer font-bold" : "cursor-pointer"}>
                         {job.type} , {job.deadReason} , {job.finishedAt ?? "unknown"}
-                    </p>
+                    </div>
                 )
             })}
+            {detailError !== null ? <div className="text-red-500 mt-4">{detailError}</div> : null}
+            {detail !== null ? <div className="mt-4">Attempts : {detail.totalAttempts}</div> : null}
+            {detail !== null ? detail.attemptHistory.map((attempt) => {
+                return (
+                    <div key={attempt.attemptNumber}>
+                        <div># {attempt.attemptNumber}</div>
+                        <div>{attempt.workerId}</div>
+                        <div>{attempt.outcome ?? "No Outcome"}</div>
+                        <div>{attempt.startedAt}</div>
+                        <div>{attempt.endedAt ?? "Not ended"}</div>
+                        <div>{attempt.errorMessage ?? "No error message"}</div>
+                    </div>
+                )
+            }) : null}
         </div>
     )
 }
