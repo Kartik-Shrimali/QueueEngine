@@ -18,3 +18,46 @@ export type ThroughputPoint = {
 } 
 
 export type ConnectionStatus = "connecting" | "connected" | "reconnecting" | "failed"
+
+export type JobRow = {
+    id : string,
+    type : string,
+    status : string,
+    priority : string,
+    attempts : number,
+    maxAttempts : number,
+    runAfter : string,
+    enqueuedAt : string,
+    updatedAt : string,
+    deadReason : string | null,
+    replayedFrom : string | null,
+    firstStartedAt : string | null,
+    finishedAt : string | null,
+}
+
+export type AttemptRow = {
+    attemptNumber : number,
+    workerId : string,
+    startedAt : string,
+    endedAt : string | null,
+    outcome : string | null,
+    errorMessage : string | null,
+    durationMs : number | null
+}
+
+export type JobDetail = {
+    id : string,
+    type : string,
+    status : string,
+    priority : string,
+    attempts : number,
+    maxAttempts : number,
+    runAfter : string,
+    enqueuedAt : string,
+    deadReason : string | null,
+    replayedFrom : string | null,
+    firstStartedAt : string | null,
+    finishedAt : string | null,
+    totalAttempts : number,
+    attemptHistory : AttemptRow[]
+}

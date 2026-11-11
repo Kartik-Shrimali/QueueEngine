@@ -7,6 +7,7 @@ import type { ConnectionStatus, LogRow, ThroughputPoint } from "./lib/types";
 import JobLog from "./components/JobLog";
 import Workers from "./components/Workers";
 import Throughput from "./components/Throughput";
+import Dlq from "./components/Dlq";
 
 const statusText: Record<ConnectionStatus, string> = {
     connecting: "Connecting",
@@ -101,6 +102,7 @@ export default function App() {
             {adminKey !== null ? <Workers stats={stats}></Workers> : null}
             {adminKey !== null ? <Throughput history={history} /> : null}
             {adminKey !== null ? <JobLog rows={rows} /> : null}
+            {adminKey !== null ? <Dlq adminKey={adminKey}/> : null}
         </div>
     );
 }
