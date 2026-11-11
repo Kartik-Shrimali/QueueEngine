@@ -40,9 +40,19 @@ export function connect(brokerUrl: string, key: string, onMessage: (msg: any) =>
     onStatus("connecting");
     open();
 
-    return function close() {
+    function send(message : unknown) : boolean {
+        if(currentSocket && currentSocket.readyState === WebSocket.OPEN){
+            currentSocket.send(JSON.stringify(message));
+            return true;
+        }
+        return false;
+    }
+
+    function close() {
         stopped = true;
         window.clearTimeout(timer);
         currentSocket?.close()
     }
+
+    return {close , send}
 }

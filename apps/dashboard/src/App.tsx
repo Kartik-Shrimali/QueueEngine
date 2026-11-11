@@ -22,12 +22,13 @@ export default function App() {
     const [history, setHistory] = useState<ThroughputPoint[]>([]);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [status, setStatus] = useState<ConnectionStatus>("connecting");
-    const nextId = useRef(0)
+    const nextId = useRef(0);
+    const sendRef = useRef<((message : unknown) => boolean) | null>(null);
 
     useEffect(() => {
         if (adminKey === null) return;
         setErrorMessage(null);
-        const socketClose = connect(
+        const connection = connect(
             import.meta.env.VITE_BROKER_URL,
             adminKey,
             (msg) => {
@@ -79,7 +80,11 @@ export default function App() {
                 }
             }
         );
-        return () => socketClose();
+        sendRef.current = connection.send;
+        return () => {
+            sendRef.current = null;
+            connection.close();
+        };
     }, [adminKey]);
 
     return (
