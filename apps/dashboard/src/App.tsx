@@ -24,16 +24,16 @@ export default function App() {
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [status, setStatus] = useState<ConnectionStatus>("connecting");
     const [replayResult, setReplayResult] = useState<ReplayResult | null>(null);
-    const [pendingRequestId , setPendingRequestId] = useState<string | null>(null);
-    const [replayNote , setReplayNote ] = useState<string | null>(null);
+    const [deadTick, setDeadTick] = useState<number>(0);
     const nextId = useRef(0);
     const sendRef = useRef<((message: unknown) => boolean) | null>(null);
 
     function sendMessage(message: unknown): boolean {
-        if(sendRef.current === null) return false;
+        if (sendRef.current === null) return false;
 
         return sendRef.current(message);
     }
+
     useEffect(() => {
         if (adminKey === null) return;
         setErrorMessage(null);
@@ -45,6 +45,11 @@ export default function App() {
                     setStats(msg.stats);
                 }
                 if (msg.t === "events") {
+
+                    if (msg.events.some((event: JobEvent) => event.to === "dead")) {
+                        setDeadTick((prev) => prev + 1);
+                    }
+
                     const eventList: LogRow[] = [];
                     const reversedList = msg.events.reverse();
 
@@ -114,7 +119,7 @@ export default function App() {
             {adminKey !== null ? <Workers stats={stats}></Workers> : null}
             {adminKey !== null ? <Throughput history={history} /> : null}
             {adminKey !== null ? <JobLog rows={rows} /> : null}
-            {adminKey !== null ? <Dlq adminKey={adminKey} send={sendMessage} replayResult={replayResult}/> : null}
+            {adminKey !== null ? <Dlq adminKey={adminKey} send={sendMessage} replayResult={replayResult} deadTick={deadTick} /> : null}
         </div>
     );
 }

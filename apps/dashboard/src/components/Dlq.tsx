@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { type JobDetail, type JobRow, type ReplayResult } from "../lib/types";
 import { fetchDeadJobs, fetchJobDetail } from "../lib/api";
 
-export default function Dlq(props: { adminKey: string, send: (message: unknown) => boolean, replayResult: ReplayResult | null }) {
+export default function Dlq(props: { adminKey: string, send: (message: unknown) => boolean, replayResult: ReplayResult | null , deadTick : number }) {
     const [jobs, setJobs] = useState<JobRow[]>([]);
     const [nextCursor, setCursor] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -50,7 +50,7 @@ export default function Dlq(props: { adminKey: string, send: (message: unknown) 
         return () => {
             ignore = true;
         }
-    }, [props.adminKey]);
+    }, [props.adminKey , props.deadTick]);
 
     useEffect(() => {
         let ignore = false;
