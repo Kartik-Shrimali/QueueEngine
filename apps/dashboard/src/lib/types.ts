@@ -61,3 +61,10 @@ export type JobDetail = {
     totalAttempts : number,
     attemptHistory : AttemptRow[]
 }
+
+export type ReplayResult = {
+    requestId : string,
+    ok : boolean,
+    newJobId ?: string,
+    error ?: string,
+}

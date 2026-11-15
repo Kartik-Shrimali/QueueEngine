@@ -1,14 +1,31 @@
 import { useEffect, useState } from "react";
-import { type JobDetail, type JobRow } from "../lib/types";
+import { type JobDetail, type JobRow, type ReplayResult } from "../lib/types";
 import { fetchDeadJobs, fetchJobDetail } from "../lib/api";
 
-export default function Dlq(props: { adminKey: string }) {
+export default function Dlq(props: { adminKey: string, send: (message: unknown) => boolean, replayResult: ReplayResult | null }) {
     const [jobs, setJobs] = useState<JobRow[]>([]);
     const [nextCursor, setCursor] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [detail, setDetail] = useState<JobDetail | null>(null);
     const [detailError, setDetailError] = useState<string | null>(null);
+    const [pendingRequestId, setPendingRequestId] = useState<string | null>(null);
+    const [replayNote, setReplayNote] = useState<string | null>(null);
+
+    function handleReplay() {
+        if (detail === null) return;
+
+        const requestId = crypto.randomUUID();
+        setPendingRequestId(requestId);
+        setReplayNote(null);
+
+        const result = props.send({ t: "replay", jobId: detail.id, requestId });
+
+        if (result === false) {
+            setReplayNote("Not Connected");
+            setPendingRequestId(null);
+        }
+    }
 
     useEffect(() => {
         let ignore = false;
@@ -83,6 +100,8 @@ export default function Dlq(props: { adminKey: string }) {
                 return (
                     <div key={job.id} onClick={() => {
                         setSelectedId(job.id);
+                        setPendingRequestId(null);
+                        setReplayNote(null);
                     }} className={job.id === selectedId ? "cursor-pointer font-bold" : "cursor-pointer"}>
                         {job.type} , <span className={reasonClass}>{job.deadReason}</span> {reasonMeaning} , {job.finishedAt ?? "unknown"}
                     </div>
@@ -102,6 +121,12 @@ export default function Dlq(props: { adminKey: string }) {
                     </div>
                 )
             }) : null}
+
+            {detail !== null ? <button onClick={handleReplay} className="mt-4 border rounded px-3 py-1">Replay</button> : null}
+            {replayNote !== null ? <div className="text-red-500 mt-2">{replayNote}</div> : null}
+            {((props.replayResult !== null) && (props.replayResult.requestId === pendingRequestId)) ? <div>
+                {props.replayResult.ok === true ? <div>Replayed as {props.replayResult.newJobId}</div> : <div>Replay Failed: {props.replayResult.error}</div>}
+            </div> : null}
         </div>
     )
 }

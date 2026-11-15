@@ -3,7 +3,7 @@ import { connect } from "./lib/ws";
 import Login from "./components/Login";
 import { type JobEvent, type Stats } from "@queueengine/shared"
 import Depth from "./components/Depth";
-import type { ConnectionStatus, LogRow, ThroughputPoint } from "./lib/types";
+import { ReplayResult, type ConnectionStatus, type LogRow, type ThroughputPoint } from "./lib/types";
 import JobLog from "./components/JobLog";
 import Workers from "./components/Workers";
 import Throughput from "./components/Throughput";
@@ -23,9 +23,17 @@ export default function App() {
     const [history, setHistory] = useState<ThroughputPoint[]>([]);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [status, setStatus] = useState<ConnectionStatus>("connecting");
+    const [replayResult, setReplayResult] = useState<ReplayResult | null>(null);
+    const [pendingRequestId , setPendingRequestId] = useState<string | null>(null);
+    const [replayNote , setReplayNote ] = useState<string | null>(null);
     const nextId = useRef(0);
-    const sendRef = useRef<((message : unknown) => boolean) | null>(null);
+    const sendRef = useRef<((message: unknown) => boolean) | null>(null);
 
+    function sendMessage(message: unknown): boolean {
+        if(sendRef.current === null) return false;
+
+        return sendRef.current(message);
+    }
     useEffect(() => {
         if (adminKey === null) return;
         setErrorMessage(null);
@@ -72,6 +80,10 @@ export default function App() {
                         return [...prev, { at, completed, failed }].slice(-60);
                     })
                 }
+
+                if (msg.t === "replay_result") {
+                    setReplayResult(msg);
+                }
             },
             (newStatus) => {
                 setStatus(newStatus)
@@ -102,7 +114,7 @@ export default function App() {
             {adminKey !== null ? <Workers stats={stats}></Workers> : null}
             {adminKey !== null ? <Throughput history={history} /> : null}
             {adminKey !== null ? <JobLog rows={rows} /> : null}
-            {adminKey !== null ? <Dlq adminKey={adminKey}/> : null}
+            {adminKey !== null ? <Dlq adminKey={adminKey} send={sendMessage} replayResult={replayResult}/> : null}
         </div>
     );
 }
