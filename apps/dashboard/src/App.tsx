@@ -106,20 +106,25 @@ export default function App() {
     }, [adminKey]);
 
     return (
-        <div className="min-h-screen bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100 p-6">
-            <h1 className="text-2xl font-semibold">QueueEngine</h1>
-            {adminKey !== null ? (
-                <p className={status === "connected" ? "text-green-500" : "text-amber-500"}>
-                    {statusText[status]}
-                </p>
-            ) : null}
-            {errorMessage !== null ? <p className="text-red-500">{errorMessage}</p> : null}
-            {adminKey === null ? <Login onLogin={setAdminKey}></Login> : null}
-            {adminKey !== null ? <Depth stats={stats}></Depth> : null}
-            {adminKey !== null ? <Workers stats={stats}></Workers> : null}
-            {adminKey !== null ? <Throughput history={history} /> : null}
-            {adminKey !== null ? <JobLog rows={rows} /> : null}
-            {adminKey !== null ? <Dlq adminKey={adminKey} send={sendMessage} replayResult={replayResult} deadTick={deadTick} /> : null}
+        <div className="min-h-screen bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+            <div className="mx-auto max-w-6xl space-y-6 px-6 py-8">
+                <header className="flex items-center justify-between">
+                    <h1 className="text-xl font-semibold tracking-tight">QueueEngine</h1>
+                    {adminKey !== null ? (
+                        <span role="status" className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                            <span className={status === "connected" ? "h-2 w-2 rounded-full bg-green-500" : "h-2 w-2 rounded-full bg-amber-500"}></span>
+                            {statusText[status]}
+                        </span>
+                    ) : null}
+                </header>
+                {errorMessage !== null ? <p role="alert" className="text-sm text-red-500">{errorMessage}</p> : null}
+                {adminKey === null ? <Login onLogin={setAdminKey}></Login> : null}
+                {adminKey !== null ? <Depth stats={stats}></Depth> : null}
+                {adminKey !== null ? <Workers stats={stats}></Workers> : null}
+                {adminKey !== null ? <Throughput history={history} /> : null}
+                {adminKey !== null ? <JobLog rows={rows} /> : null}
+                {adminKey !== null ? <Dlq adminKey={adminKey} send={sendMessage} replayResult={replayResult} deadTick={deadTick} /> : null}
+            </div>
         </div>
     );
 }
