@@ -1,14 +1,19 @@
 {
   "name": "@queueengine/shared",
-  "version": "1.0.0",
-  "description": "",
+  "version": "0.1.0",
+  "description": "Shared types, constants and queue maths for QueueEngine.",
   "main": "dist/index.js",
   "scripts": {
     "test": "vitest run",
     "build" : "tsc"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "module"
+  "author": "Kartik Shrimali",
+  "license": "MIT",
+  "type": "module",
+  "types": "dist/index.d.ts",
+  "files": ["dist" , "!dist/**/*.test.*"],
+  "publishConfig": {
+    "access": "public"
+  }
 }
