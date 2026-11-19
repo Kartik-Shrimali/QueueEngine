@@ -1,14 +1,19 @@
 {
   "name": "@queueengine/sdk",
-  "version": "1.0.0",
-  "description": "",
+  "version": "0.1.0",
+  "description": "Typed client for enqueueing background jobs to a QueueEngine broker.",
   "main": "dist/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build" : "tsc"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "module"
+  "author": "Kartik Shrimali",
+  "license": "MIT",
+  "type": "module",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "publishConfig": {
+    "access": "public"
+  }
 }
