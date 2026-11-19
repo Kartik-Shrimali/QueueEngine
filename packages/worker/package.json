@@ -1,18 +1,23 @@
 {
   "name": "@queueengine/worker",
-  "version": "1.0.0",
-  "description": "",
+  "version": "0.1.0",
+  "description": "Worker library for running QueueEngine jobs with leases and heartbeats.",
   "main": "dist/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Kartik Shrimali",
+  "license": "MIT",
   "type": "module",
   "dependencies": {
     "axios": "^1.20.0",
     "@queueengine/shared": "workspace:*"
+  },
+  "types": "dist/index.d.ts",
+  "files": ["dist" , "!dist/scratch.*"],
+  "publishConfig": {
+    "access": "public"
   }
 }
