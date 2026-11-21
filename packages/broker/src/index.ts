@@ -9,11 +9,19 @@ import { acquireBrokerLock, releaseBrokerLock, startLockRenewal } from "./single
 import { pool } from "./store/pg/client.js";
 import { startWsServer } from "./events/ws/server.js";
 import { startStats } from "./events/stats.js";
+import { runMigrations } from "./store/pg/migrate.js";
 
-try{
+try {
     await pool.query(`SELECT 1`)
-}catch(error : any){
-    console.error(`Some error while connecting to postgres.Error : ` , error.code)
+} catch (error: any) {
+    console.error(`Some error while connecting to postgres.Error : `, error.message || error.code)
+    process.exit(1);
+}
+
+try {
+    await runMigrations();
+} catch (error: any) {
+    console.error(`There was some error in running migrations.Error : ` , error.message || error.code);
     process.exit(1);
 }
 
@@ -47,5 +55,5 @@ async function shutDownAll() {
     listenObject.closeIdleConnections();
     setTimeout(() => {
         listenObject.closeAllConnections();
-    } , 2000)
+    }, 2000)
 }

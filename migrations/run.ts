@@ -1,39 +1,11 @@
-import pg from "pg"
-import {readFileSync , readdirSync } from "fs";
-import { config } from "../packages/broker/src/config";
+import {runMigrations} from "../packages/broker/src/store/pg/migrate";
+import { pool } from "../packages/broker/src/store/pg/client";
 
-const {Client} = pg;
-
-const connectionString = config.databaseUrl;
-
-async function main(){
-    const client = new Client({connectionString});
-    await client.connect();
-    console.log("Connected to Postgres");
-    
-    const trackingTableSql = readFileSync('migrations/000_migrations_table.sql' , 'utf-8');
-    await client.query(trackingTableSql);
-    console.log("schema_migrations table ready");
-
-    const files = readdirSync('migrations').filter((f) => f.endsWith('.sql')).sort();
-    for(const file of files){
-        const result = await client.query(`SELECT 1 FROM schema_migrations WHERE version = $1`, [file]);
-
-        if(result.rowCount && result.rowCount > 0){
-            console.log(`Skipping ${file} (already applied)`);
-            continue;
-        }
-
-        console.log(`Applying ${file}`);
-        const query = readFileSync(`migrations/${file}`, 'utf-8');
-        await client.query(query);
-        await client.query('INSERT INTO schema_migrations (version) VALUES ($1)' , [file]);
-        console.log(`Applied ${file}`);
-    }
-
-    
-
-    await client.end();
+try{
+    await runMigrations(); 
+}catch(error : any){
+    console.error('Migration failed: ' , error.message || error.code);
+    process.exitCode = 1;
+}finally{
+    await pool.end();
 }
-
-main();
