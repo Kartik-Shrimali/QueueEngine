@@ -29,8 +29,8 @@ register('bench_io_200' , async(payload)=> {
 })
 
 const worker = createWorker({
-    brokerUrl : 'http://localhost:3000',
-    apiKey : "dev_worker_key_change_me"
+    brokerUrl : process.env.BROKER_URL ?? 'http://localhost:3000',
+    apiKey : process.env.WORKER_API_KEY ?? "dev_worker_key_change_me"
 });
 
 worker.start();
