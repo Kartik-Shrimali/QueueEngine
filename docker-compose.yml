@@ -7,6 +7,11 @@ services:
       POSTGRES_DB: "postgres"
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL" , "pg_isready -U user -d postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
   
 
   redis: 
@@ -15,3 +20,54 @@ services:
       - "6379:6379"
     command:
       redis-server --maxmemory-policy noeviction
+    healthcheck:
+      test: ["CMD" , "redis-cli" , "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  broker:
+    build:
+      context: .
+      dockerfile: packages/broker/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://user:pass123@postgres:5432/postgres
+      - REDIS_URL=redis://redis:6379
+      - PRODUCER_API_KEY=${PRODUCER_API_KEY:-dev_producer_key_change_me}
+      - WORKER_API_KEY=${WORKER_API_KEY:-dev_worker_key_change_me}
+      - ADMIN_API_KEY=${ADMIN_API_KEY:-dev_admin_key_change_me}
+    depends_on:
+      postgres:
+        condition: service_healthy      
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD" , "node" , "-e" , "fetch('http://localhost:3000/readyz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+      start_period: 10s
+  
+  worker:
+    build:
+      context: .
+      dockerfile: examples/demo-worker/Dockerfile
+    environment:
+      - BROKER_URL=http://broker:3000
+      - WORKER_API_KEY=${WORKER_API_KEY:-dev_worker_key_change_me}
+    depends_on:
+      broker:
+        condition: service_healthy
+    deploy:
+      replicas: 2
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: apps/dashboard/Dockerfile
+      args:
+        - VITE_BROKER_URL=http://localhost:3000
+    ports:
+      - "5173:80"
