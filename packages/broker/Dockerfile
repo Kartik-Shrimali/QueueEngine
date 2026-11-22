@@ -1,15 +1,15 @@
-    FROM node:22-slim
+FROM node:22-slim
 
-    WORKDIR /app
+WORKDIR /app
 
-    RUN ["npm"  , "install" , "-g" , "pnpm@11.24.0"]
+RUN ["npm"  , "install" , "-g" , "pnpm@11.24.0"]
 
-    COPY . /app
+COPY . /app
 
-    RUN ["pnpm" , "install" , "--frozen-lockfile" , "--filter" , "@queueengine/broker..."]
+RUN ["pnpm" , "install" , "--frozen-lockfile" , "--filter" , "@queueengine/broker..."]
 
-    RUN ["pnpm" ,  "--filter" , "@queueengine/broker..." , "build"]
+RUN ["pnpm" ,  "--filter" , "@queueengine/broker..." , "build"]
 
-    EXPOSE 3000
+EXPOSE 3000
 
-    CMD ["node" , "packages/broker/dist/index.js"]
+CMD ["node" , "packages/broker/dist/index.js"]
